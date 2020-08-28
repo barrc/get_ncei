@@ -22,7 +22,7 @@ def download_station_inventory_file():
 
 
 def read_coop_file():
-    station_inv_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200723.csv')
+    station_inv_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200826.csv')
     stations = []
 
     with open(station_inv_file, 'r') as csv_file:
