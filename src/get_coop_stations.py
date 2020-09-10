@@ -139,7 +139,15 @@ def check_years(coops):
     Determines which C-HPD v2 stations to use
 
     Rules:
-
+    1. If a station is in BASINS and is current, use the station
+    2. If a station is in BASINS and is not current, but there is no gap between 
+       the BASINS end date and the C-HPD v2 start date,  use the station
+    3. If a stations is in BASINS and there is a gap between the BASINS 
+       end date and the C-HPD v2 start date, only use the station if there
+       are at least 10 years of data from C-HPD v2
+    4. If a station is not in BASINS, use the station if it has at least
+       10 consecutive years of data
+    
     """
     coops_to_use = []
 
