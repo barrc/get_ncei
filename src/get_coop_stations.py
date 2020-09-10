@@ -167,15 +167,6 @@ def write_one(dummy_station):
         for item in dummy_station:
             writer.writerow(asdict(item).values())
 
-def check_end_date_of_overlap_stations(basins, coops):
-    for item in coops:
-        for x in basins:
-            if item.station_id == x.station_id:
-                if x.end_date <= datetime.datetime(2006, 12, 30):
-                    if item.start_date >= datetime.datetime(2006, 1, 1):
-                        pass
-                        # print(item.station_id, item.station_name)
-                        # print(item.start_date, item.end_date, x.end_date)
 
 def get_earliest_end_date(coops):
     """
@@ -212,7 +203,6 @@ if __name__ == '__main__':
     get_earliest_end_date(coop_stations)
     get_latest_start_date(coop_stations)
 
-    # check_end_date_of_overlap_stations(basins_stations, coops_to_use)
     # write_one(coops_to_use)
 
     # below function used for exploration; station/code matches deemed acceptable
