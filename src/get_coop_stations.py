@@ -135,6 +135,12 @@ def assign_in_basins_attribute(basins, coops):
 
 
 def check_years(coops):
+    """
+    Determines which C-HPD v2 stations to use
+
+    Rules:
+
+    """
     coops_to_use = []
 
     for item in coops:
@@ -203,7 +209,7 @@ if __name__ == '__main__':
     get_earliest_end_date(coop_stations)
     get_latest_start_date(coop_stations)
 
-    # write_one(coops_to_use)
+    write_one(coops_to_use)
 
     # below function used for exploration; station/code matches deemed acceptable
     # check_codes(basins_stations, coop_stations)
