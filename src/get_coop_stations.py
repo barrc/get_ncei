@@ -188,6 +188,10 @@ def get_latest_start_date(coops):
     return max(start_dates)
 
 if __name__ == '__main__':
+    # if you have the most recent file, you can prevent re-downloading that file
+    # by commenting out the function download_station_inventory_file and specifying the filepath
+    # in the line below
+    # station_inventory_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200909.csv')
 
     station_inventory_file = download_station_inventory_file()
 
