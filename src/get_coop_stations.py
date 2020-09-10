@@ -100,11 +100,11 @@ def assign_in_basins_attribute(basins, coops):
     """
     Assigns in_basins attribute
 
-    Iterates through all C-HPD Stations and determine if the station_id 
+    Iterates through all C-HPD Stations and determine if the station_id
     maches a station_id in the BASINS dataset
 
     Writes file break_with_basins to determine which stations have
-    a brek between the end of the BASINS reporting period and the 
+    a break between the end of the BASINS reporting period and the 
     beginning of the C-HPD v2 reporting period
 
     Returns list of C-HPD stations with in_basins attribute assigned
@@ -117,9 +117,9 @@ def assign_in_basins_attribute(basins, coops):
         file.write('station_id, station_name, BASINS_start_date, BASINS_end_date, COOP_start_date, COOP_end_date \n')
         for item in coops:
             if item.station_id in basins_ids:
+                item.in_basins = True
                 for x in basins:
                     if item.station_id == x.station_id:
-                        item.in_basins = True
                         if item.start_date > x.end_date:
                             file.write(item.station_id + ',')
                             file.write(item.station_name + ',')
@@ -130,7 +130,7 @@ def assign_in_basins_attribute(basins, coops):
                             file.write('\n')
                             counter += 1
 
-    print(f'there are {counter} stations with a gap between the end of BASINS and the start of the COOP record')
+    print(f'There are {counter} stations with a gap between the end of BASINS and the start of the COOP record')
     return coops
 
 
@@ -178,34 +178,42 @@ def check_end_date_of_overlap_stations(basins, coops):
                         # print(item.start_date, item.end_date, x.end_date)
 
 def get_earliest_end_date(coops):
-    end_dates = [item.end_date for item in coops]
+    """
+    Prints earliest end date in C-HPD v2
+    Currently informational only
+    """
 
-    return min(end_dates)
+    end_dates = [item.end_date for item in coops]
+    print(f'The earliest end date for a station in C-HPD v2 is {min(end_dates)}')
 
 def get_latest_start_date(coops):
+    """
+    Prints latest start date in C-HPD v2
+    Currently informational only
+    """
     start_dates = [item.start_date for item in coops]
-
-    return max(start_dates)
+    print(f'The latest start date for a station in C-HPD v2 is {max(start_dates)}')
 
 if __name__ == '__main__':
     # if you have the most recent file, you can prevent re-downloading that file
-    # by commenting out the function download_station_inventory_file and specifying the filepath
-    # in the line below
-    # station_inventory_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200909.csv')
+    # by commenting out the download_station_inventory_file() line and 
+    # specifying the filepath directly below
 
-    station_inventory_file = download_station_inventory_file()
+    station_inventory_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200909.csv')
+    # station_inventory_file = download_station_inventory_file()
 
     basins_stations = common.read_basins_file()
     coop_stations = read_coop_file(station_inventory_file)
 
-    # below function used for exploration; station/code matches deemed acceptable
-    # check_codes(basins_stations, coop_stations)
+    coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
+    coops_to_use = check_years(coop_stations)
 
-    # coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
-    # coops_to_use = check_years(coop_stations)
-
-    # get_earliest_end_date(coop_stations)
-    # get_latest_start_date(coop_stations)
+    # Exploratory functions
+    get_earliest_end_date(coop_stations)
+    get_latest_start_date(coop_stations)
 
     # check_end_date_of_overlap_stations(basins_stations, coops_to_use)
     # write_one(coops_to_use)
+
+    # below function used for exploration; station/code matches deemed acceptable
+    # check_codes(basins_stations, coop_stations)
