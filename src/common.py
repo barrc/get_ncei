@@ -3,11 +3,14 @@ from collections import namedtuple
 from dataclasses import dataclass
 import os
 
-CUTOFF_START_YEAR = 2010
-CUTOFF_START_DATE = datetime.datetime(CUTOFF_START_YEAR, 1, 1)
+# plan is to keep this date at 1990
+EARLIEST_START_DATE = datetime.datetime(1990, 1, 1)
 
-CUTOFF_END_YEAR = 2019
-CUTOFF_END_DATE = datetime.datetime(CUTOFF_END_YEAR, 12, 31)
+# set the following variable to the year you are in minus 1
+CURRENT_END_YEAR = 2019
+CURRENT_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
+CUTOFF_START_DATE = datetime.datetime(CURRENT_END_YEAR - 10 + 1, 1, 1)
+CUTOFF_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 
 
 @dataclass
@@ -20,9 +23,30 @@ class Station:
     longitude: str
     in_basins: bool
 
-    def get_dates_to_use(self):
+    def get_start_date_to_use(self, basins_stations):
         if self.in_basins:
-            print('cat!')
+            basins_match = [x for x in basins_stations if self.station_id == x.station_id]
+            assert len(basins_match) == 1
+            x = basins_match[0]
+            return(x.end_date + datetime.timedelta(days=1))
+        else:
+            if self.start_date <= EARLIEST_START_DATE:
+                return EARLIEST_START_DATE
+            else:
+                pass
+
+            
+
+    def get_end_date_to_use(self, basins_stations):
+        # TODO does it matter if in basins?
+        if self.end_date >= CUTOFF_END_DATE:
+            return CUTOFF_END_DATE
+        else:
+            # TODO confirm this is what they want 
+            # use last complete year
+            return datetime.datetime(self.end_date.year - 1, 12, 31)
+            print(self.end_date)
+            
 
 # class Station:
 #     def __init__(self, station_id, station_name, start_date, end_date, latitude, longitude):
@@ -47,6 +71,11 @@ def make_basins_date(input_date):
 
 
 def read_basins_file():
+    """
+    Reads BASINS file
+    Returns a list of Station objects representing each entry in file
+    """
+
     basins_file = os.path.join(os.getcwd(), 'src', 'D4EMLite_PREC_Details.txt')
 
     with open(basins_file, 'r') as file:

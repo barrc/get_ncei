@@ -38,6 +38,12 @@ def download_station_inventory_file():
 
 
 def read_coop_file(station_inv_file):
+    """
+    Reads the C-HPD version 2 station inventory file
+
+    Returns a list of Station objects representing each entry in file
+    """
+
     station_inv_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200826.csv')
     stations = []
 
@@ -91,10 +97,22 @@ def check_codes(basins, coops):
     assert (len(exact_match) + len(close_enough) + len(oh_no) + len(not_in_basins)) == len(coop_stations)
 
 def assign_in_basins_attribute(basins, coops):
-    basins_ids = [item.station_id for item in basins]
+    """
+    Assigns in_basins attribute
 
+    Iterates through all C-HPD Stations and determine if the station_id 
+    maches a station_id in the BASINS dataset
+
+    Writes file break_with_basins to determine which stations have
+    a brek between the end of the BASINS reporting period and the 
+    beginning of the C-HPD v2 reporting period
+
+    Returns list of C-HPD stations with in_basins attribute assigned
+    """
+
+    basins_ids = [item.station_id for item in basins]
     counter = 0
-    # with open(os.path.join(os.getcwd()))
+
     with open(os.path.join(os.getcwd(), 'src', 'break_with_basins.csv'), 'w') as file:
         file.write('station_id, station_name, BASINS_start_date, BASINS_end_date, COOP_start_date, COOP_end_date \n')
         for item in coops:
@@ -109,8 +127,6 @@ def assign_in_basins_attribute(basins, coops):
                             file.write(str(x.end_date.month) + '/' + str(x.end_date.day) + '/' + str(x.end_date.year) + ',')
                             file.write(str(item.start_date.month) + '/' + str(item.start_date.day) + '/' + str(item.start_date.year) + ',')
                             file.write(str(item.end_date.month) + '/' + str(item.end_date.day) + '/' + str(item.end_date.year))
-
-                            # file.write(x.end_date + ',')
                             file.write('\n')
                             counter += 1
 
