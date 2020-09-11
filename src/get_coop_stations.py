@@ -55,7 +55,7 @@ def read_coop_file(station_inv_file):
             stations.append(common.Station(row[0][-6:], row[5], 
                                            common.make_date(por[0]), 
                                            common.make_date(por[1]), 
-                                           row[1], row[2], False))
+                                           row[1], row[2], False, False))
 
     return stations
 
@@ -121,6 +121,7 @@ def assign_in_basins_attribute(basins, coops):
                 for x in basins:
                     if item.station_id == x.station_id:
                         if item.start_date > x.end_date:
+                            item.break_with_basins = True
                             file.write(item.station_id + ',')
                             file.write(item.station_name + ',')
                             file.write(str(x.start_date.month) + '/' + str(x.start_date.day) + '/' + str(x.start_date.year) + ',')
@@ -141,24 +142,36 @@ def check_years(coops):
     Rules:
     1. If a station is in BASINS and is current, use the station
     2. If a station is in BASINS and is not current, but there is no gap between 
-       the BASINS end date and the C-HPD v2 start date,  use the station
+       the BASINS end date and the C-HPD v2 start date,  use the station 
+       as long as there is new data
     3. If a stations is in BASINS and there is a gap between the BASINS 
        end date and the C-HPD v2 start date, only use the station if there
        are at least 10 years of data from C-HPD v2
     4. If a station is not in BASINS, use the station if it has at least
-       10 consecutive years of data
+       10 consecutive years of data since 1990
     
     """
     coops_to_use = []
 
     for item in coops:
         if item.in_basins:
+            # rule 2 - if no gap, and if new data, use station
+            if not item.break_with_basins:
+                if item.end_date.year < 2006:  # end year for BASINS
+                    pass
+                else:
+                    coops_to_use.append(item)
+            # rule 3 - if gap, only use if 10 years of data
+            else:
+                if relativedelta(item.end_date, item.start_date).years >= 10:
+                    coops_to_use.append(item)
+
             # TODO finalize this
             # if item.start_date
-            if item.end_date <= common.CUTOFF_START_DATE:
-                pass
-            else:
-                coops_to_use.append(item)
+            # if item.end_date <= common.CUTOFF_START_DATE:
+            #     pass
+            # else:
+            #     coops_to_use.append(item)
         else:
             # if not in BASINS, use if at least ten years of data from some sort of recent past
             if item.station_id == '214546':
@@ -211,7 +224,17 @@ if __name__ == '__main__':
     coop_stations = read_coop_file(station_inventory_file)
 
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
+    
+    # TODO start here and make sure the followingstations are being handled properly by check_years
+    # 332974 -- in_basins, current, no break_with_basins --> use
+    # 106174 -- in_basins, not current, no break_with_basins --> use
+    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
+    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
+    # 358717 -- not in_basins, current, more than 10 years --> use
+    #  -- not in_basins, current, less than 10 years --> don't use  TODO this one
+    # 419565 -- not in_basins, not current, more than 10 years --> use
     coops_to_use = check_years(coop_stations)
+
 
     # Exploratory functions
     get_earliest_end_date(coop_stations)
