@@ -1,6 +1,4 @@
 import csv
-import collections
-import datetime
 import os
 import requests
 
