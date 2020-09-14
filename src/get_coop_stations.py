@@ -18,7 +18,7 @@ def download_station_inventory_file():
     Returns the path to the station inventory file
     """
 
-    station_inv_base_url = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/station-inventory/'
+    station_inv_base_url = common.CHPD_BASE_URL + 'station-inventory/'
     r = requests.get(station_inv_base_url)
     raw_text = r.content.decode()
     start_index = raw_text.find('HPD_')

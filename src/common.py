@@ -3,6 +3,8 @@ from collections import namedtuple
 from dataclasses import dataclass
 import os
 
+CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
+
 # plan is to keep this date at 1990
 EARLIEST_START_DATE = datetime.datetime(1990, 1, 1)
 
@@ -36,18 +38,18 @@ class Station:
             else:
                 pass
 
-            
+
 
     def get_end_date_to_use(self, basins_stations):
         # TODO does it matter if in basins?
         if self.end_date >= CUTOFF_END_DATE:
             return CUTOFF_END_DATE
         else:
-            # TODO confirm this is what they want 
+            # TODO confirm this is what they want
             # use last complete year
             return datetime.datetime(self.end_date.year - 1, 12, 31)
             print(self.end_date)
-            
+
 
 # class Station:
 #     def __init__(self, station_id, station_name, start_date, end_date, latitude, longitude):
@@ -59,7 +61,7 @@ class Station:
 #         self.longitude = longitude
 #         self.in_basins = False
 
-# Station = namedtuple('Station', ['station_id', 'station_name', 'start_date', 
+# Station = namedtuple('Station', ['station_id', 'station_name', 'start_date',
 #                                  'end_date', 'latitude', 'longitude'])
 
 def make_date(input_date):
@@ -86,7 +88,7 @@ def read_basins_file():
     header = split_data.pop(0)
 
 
-    stations = [Station(item[0], item[-1], make_basins_date(item[8]), make_basins_date(item[9]), 
+    stations = [Station(item[0], item[-1], make_basins_date(item[8]), make_basins_date(item[9]),
                         item[4], item[5], True, True) for item in split_data]
 
     return stations

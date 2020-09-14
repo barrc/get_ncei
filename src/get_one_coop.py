@@ -8,10 +8,14 @@ import common
 RAW_DATA_DIR = os.path.join(os.getcwd(), 'src', 'raw_coop_data')
 
 
+def str_date_to_datetime(str_date):
+    x = str_date.split(' ')[0].split('-')
+    return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
+
 def get_stations():
     stations = []
 
-    with open(os.path.join(os.getcwd(), 'coop_stations_to_use.csv'), 'r') as csv_file:
+    with open(os.path.join(os.getcwd(), 'src', 'coop_stations_to_use.csv'), 'r') as csv_file:
         coop_reader = csv.reader(csv_file)
         header = next(coop_reader)
         for row in coop_reader:
@@ -19,13 +23,20 @@ def get_stations():
                 in_basins = True
             else:
                 in_basins = False
-            stations.append(common.Station(row[0], row[1], row[2], row[3], row[4], row[5], in_basins))
+            if row[7] == 'True':
+                break_with_basins = True
+            else:
+                break_with_basins = False
+            stations.append(common.Station(row[0], row[1], str_date_to_datetime(row[2]),
+                                           str_date_to_datetime(row[3]), row[4], row[5],
+                                           in_basins, break_with_basins))
+
 
     return stations
 
 def get_data(coop_stations):
-    base_url = 'https://www.ncei.noaa.gov/data/coop-hourly-precipitation/v2/access/'
-    
+    base_url = common.CHPD_BASE_URL + 'access/'
+
     # for station in coop_stations:
     station = coop_stations
     # print(station.start_date, station.end_date)]
@@ -51,14 +62,18 @@ def process_data(station, basins):
     missing = 0
     partial = 0
 
-    station.get_dates_to_use()
+    coop_start_date = station.get_start_date_to_use(basins)
+    coop_end_date = station.get_end_date_to_use(basins)
+
+    print(coop_start_date)
+    print(coop_end_date)
 
     for item in data:
 
         split_item = item.split(b',')
         raw_date = split_item[4].decode().split('-')
         actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]), int(raw_date[2]))
-        
+
         if actual_date.year == 2006:
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
@@ -89,7 +104,7 @@ def process_data(station, basins):
                     debug_year_precip += item
 
             # debug_year_precip += sum(float_precip)
-        
+
     print(debug_year_precip)
     print(missing)
     print(partial)
@@ -104,21 +119,12 @@ if __name__  == '__main__':
     # get_data(coop_stations_to_use[2]) # 2 -> ALBERTA
     # Alberta is "most" typical -- BASINS goes thru 12/31/2006 and COOP is current
 
+    which_station_id = '332974'  # in BASINS and current
+    # which_station_id = '106174' # in BASINS and not current
+    which_station_id = '358717' # not in BASINS and current
+    which_station_id = '214546'
+
     for item in coop_stations_to_use:
-        if item.station_id == '350694': # bend
-            # get_data(item)
-            # process_data(item, basins_stations)
-            pass
-        elif item.station_id == '357823': # silverton
-            # get_data(item)
-            # process_data(item, basins_stations)
-            pass
-        elif item.station_id == '409493': # waverly airport
-            # get_data(item)
-            # process_data(item, basins_stations)
-            pass
-        elif item.station_id == '428733':
+        if item.station_id == which_station_id:
             get_data(item)
             process_data(item, basins_stations)
-
-    # process_data(coop_stations_to_use[2])
