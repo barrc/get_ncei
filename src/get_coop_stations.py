@@ -129,15 +129,20 @@ def assign_in_basins_attribute(basins, coops):
                             item.break_with_basins = True
                             to_file = item.station_id + ','
                             to_file += item.station_name + ','
+                            to_file += (str(x.start_date.month) + '/' +
+                                        str(x.start_date.day) + '/' +
+                                        str(x.start_date.year) + ',')
+                            to_file += (str(x.end_date.month) + '/' +
+                                        str(x.end_date.day) + '/' +
+                                        str(x.end_date.year) + ',')
+                            to_file += (str(item.start_date.month) + '/' +
+                                       str(item.start_date.day) + '/' +
+                                       str(item.start_date.year) + ',')
+                            to_file += (str(item.end_date.month) + '/' +
+                                       str(item.end_date.day) + '/' +
+                                       str(item.end_date.year))
+                            to_file += '\n'
                             file.write(to_file)
-                            # file.write(item.station_name + ',')
-                            file.write(str(x.start_date.month) + '/' +
-                                       str(x.start_date.day) + '/' +
-                                       str(x.start_date.year) + ',')
-                            file.write(str(x.end_date.month) + '/' + str(x.end_date.day) + '/' + str(x.end_date.year) + ',')
-                            file.write(str(item.start_date.month) + '/' + str(item.start_date.day) + '/' + str(item.start_date.year) + ',')
-                            file.write(str(item.end_date.month) + '/' + str(item.end_date.day) + '/' + str(item.end_date.year))
-                            file.write('\n')
                             counter += 1
 
     print(f'There are {counter} stations with a gap between the end of BASINS and the start of the COOP record')
