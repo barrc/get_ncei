@@ -1,5 +1,4 @@
 import datetime
-from collections import namedtuple
 from dataclasses import dataclass
 import os
 
@@ -26,11 +25,11 @@ class Station:
     in_basins: bool
     break_with_basins: bool
 
-    def get_start_date_to_use(self, basins_stations):
+    def get_start_date_to_use(self, basins):
         if self.in_basins:
-            basins_match = [x for x in basins_stations if self.station_id == x.station_id]
-            assert len(basins_match) == 1
-            x = basins_match[0]
+            match = [x for x in basins if self.station_id == x.station_id]
+            assert len(match) == 1
+            x = match[0]
             return(x.end_date + datetime.timedelta(days=1))
         else:
             if self.start_date <= EARLIEST_START_DATE:
@@ -38,9 +37,7 @@ class Station:
             else:
                 pass
 
-
-
-    def get_end_date_to_use(self, basins_stations):
+    def get_end_date_to_use(self, basins):
         # TODO does it matter if in basins?
         if self.end_date >= CUTOFF_END_DATE:
             return CUTOFF_END_DATE
@@ -51,26 +48,17 @@ class Station:
             print(self.end_date)
 
 
-# class Station:
-#     def __init__(self, station_id, station_name, start_date, end_date, latitude, longitude):
-#         self.station_id = station_id
-#         self.station_name = station_name
-#         self.start_date = start_date
-#         self.end_date = end_date
-#         self.latitude = latitude
-#         self.longitude = longitude
-#         self.in_basins = False
-
-# Station = namedtuple('Station', ['station_id', 'station_name', 'start_date',
-#                                  'end_date', 'latitude', 'longitude'])
-
 def make_date(input_date):
-    return datetime.datetime(int(input_date[0:4]), int(input_date[4:6]), int(input_date[6:]))
+    return datetime.datetime(int(input_date[0:4]),
+                             int(input_date[4:6]),
+                             int(input_date[6:]))
+
 
 def make_basins_date(input_date):
     list_date = input_date.strip('\'').split('/')
-    return datetime.datetime(int(list_date[0]), int(list_date[1]), int(list_date[2]))
-
+    return datetime.datetime(int(list_date[0]),
+                             int(list_date[1]),
+                             int(list_date[2]))
 
 
 def read_basins_file():
@@ -87,8 +75,10 @@ def read_basins_file():
     split_data = [item.strip('\n').split('\t') for item in data]
     header = split_data.pop(0)
 
-
-    stations = [Station(item[0], item[-1], make_basins_date(item[8]), make_basins_date(item[9]),
-                        item[4], item[5], True, True) for item in split_data]
+    stations = [Station(item[0], item[-1],
+                        make_basins_date(item[8]),
+                        make_basins_date(item[9]),
+                        item[4], item[5], True, True)
+                for item in split_data]
 
     return stations
