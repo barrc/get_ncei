@@ -136,11 +136,11 @@ def assign_in_basins_attribute(basins, coops):
                                         str(x.end_date.day) + '/' +
                                         str(x.end_date.year) + ',')
                             to_file += (str(item.start_date.month) + '/' +
-                                       str(item.start_date.day) + '/' +
-                                       str(item.start_date.year) + ',')
+                                        str(item.start_date.day) + '/' +
+                                        str(item.start_date.year) + ',')
                             to_file += (str(item.end_date.month) + '/' +
-                                       str(item.end_date.day) + '/' +
-                                       str(item.end_date.year))
+                                        str(item.end_date.day) + '/' +
+                                        str(item.end_date.year))
                             to_file += '\n'
                             file.write(to_file)
                             counter += 1
