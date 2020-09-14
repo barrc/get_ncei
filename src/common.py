@@ -22,6 +22,7 @@ class Station:
     latitude: str
     longitude: str
     in_basins: bool
+    break_with_basins: bool
 
     def get_start_date_to_use(self, basins_stations):
         if self.in_basins:
@@ -86,6 +87,6 @@ def read_basins_file():
 
 
     stations = [Station(item[0], item[-1], make_basins_date(item[8]), make_basins_date(item[9]), 
-                        item[4], item[5], True) for item in split_data]
+                        item[4], item[5], True, True) for item in split_data]
 
     return stations

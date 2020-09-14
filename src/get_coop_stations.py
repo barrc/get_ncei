@@ -183,7 +183,16 @@ def check_years(coops):
                 
     return coops_to_use
             
-    
+def check_conditions_handled(id, coop_ids, expected_result):
+    """
+    Checks if a station has been included or not included in coops_to_use properly
+    Returns True if matches expected_result
+    """
+    if expected_result:
+        return id in coop_ids
+    else:
+        return id not in coop_ids
+
 
 
 def write_one(dummy_station):
@@ -224,23 +233,32 @@ if __name__ == '__main__':
     coop_stations = read_coop_file(station_inventory_file)
 
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
-    
-    # TODO start here and make sure the followingstations are being handled properly by check_years
-    # 332974 -- in_basins, current, no break_with_basins --> use
-    # 106174 -- in_basins, not current, no break_with_basins --> use
-    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
-    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
-    # 358717 -- not in_basins, current, more than 10 years --> use
-    #  -- not in_basins, current, less than 10 years --> don't use  TODO this one
-    # 419565 -- not in_basins, not current, more than 10 years --> use
     coops_to_use = check_years(coop_stations)
-
+    
+    coops_to_use_ids = [x.station_id for x in coops_to_use]
+    
+    # 332974 -- in_basins, current, no break_with_basins --> use
+    assert check_conditions_handled('332974', coops_to_use_ids, True)
+    # 106174 -- in_basins, not current, no break_with_basins --> use
+    assert check_conditions_handled('106174', coops_to_use_ids, True)
+    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
+    assert check_conditions_handled('121417', coops_to_use_ids, True)
+    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
+    assert check_conditions_handled('059210', coops_to_use_ids, False)
+    # 358717 -- not in_basins, current, more than 10 years --> use
+    assert check_conditions_handled('358717', coops_to_use_ids, True)
+    # 212250 -- not in_basins, current, less than 10 years --> don't use --> NOTE this station may become usable in future
+    assert check_conditions_handled('212250', coops_to_use_ids, False)
+    # 419565 -- not in_basins, not current, more than 10 years --> use
+    assert check_conditions_handled('419565', coops_to_use_ids, True)
+    
+    write_one(coops_to_use)    
 
     # Exploratory functions
     get_earliest_end_date(coop_stations)
     get_latest_start_date(coop_stations)
 
-    write_one(coops_to_use)
-
     # below function used for exploration; station/code matches deemed acceptable
     # check_codes(basins_stations, coop_stations)
+    
+    # TODO write check_lat_lon function
