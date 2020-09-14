@@ -6,6 +6,7 @@ import common
 from dataclasses import asdict
 from dateutil.relativedelta import relativedelta
 
+
 def download_station_inventory_file():
     """
     Downloads the station inventory file for COOP-HPD version 2 from the NOAA
@@ -57,6 +58,7 @@ def read_coop_file(station_inv_file):
 
     return stations
 
+
 def check_codes(basins, coops):
     coop_not_in_basins = 0
     basins_ids = [item.station_id for item in basins]
@@ -93,6 +95,7 @@ def check_codes(basins, coops):
             differences.append(item.end_date - item.start_date)
 
     assert (len(exact_match) + len(close_enough) + len(oh_no) + len(not_in_basins)) == len(coop_stations)
+
 
 def assign_in_basins_attribute(basins, coops):
     """
@@ -181,6 +184,7 @@ def check_years(coops):
 
     return coops_to_use
 
+
 def check_conditions_handled(id, coop_ids, expected_result):
     """
     Checks if a station has been included or not included in coops_to_use properly
@@ -211,6 +215,7 @@ def get_earliest_end_date(coops):
     end_dates = [item.end_date for item in coops]
     print(f'The earliest end date for a station in C-HPD v2 is {min(end_dates)}')
 
+
 def get_latest_start_date(coops):
     """
     Prints latest start date in C-HPD v2
@@ -218,6 +223,7 @@ def get_latest_start_date(coops):
     """
     start_dates = [item.start_date for item in coops]
     print(f'The latest start date for a station in C-HPD v2 is {max(start_dates)}')
+
 
 if __name__ == '__main__':
     # if you have the most recent file, you can prevent re-downloading that file
