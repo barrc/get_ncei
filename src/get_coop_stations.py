@@ -28,7 +28,7 @@ def download_station_inventory_file():
     r_file = requests.get(station_inv_base_url + filename)
     assert r_file.status_code == 200
 
-    station_inv_file = os.path.join(os.getcwd(), 'src', filename)
+    station_inv_file = os.path.join('src', filename)
 
     with open(station_inv_file, 'wb') as file:
         file.write(r.content)
@@ -43,7 +43,8 @@ def read_coop_file(station_inv_file):
     Returns a list of Station objects representing each entry in file
     """
 
-    station_inv_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200826.csv')
+    station_inv_file = os.path.join(os.getcwd(), 'src',
+                                    'HPD_v02r02_stationinv_c20200826.csv')
     stations = []
 
     with open(station_inv_file, 'r') as csv_file:
@@ -60,7 +61,7 @@ def read_coop_file(station_inv_file):
 
 
 def check_codes(basins, coops):
-    coop_not_in_basins = 0
+    # TODO fix up / document this function
     basins_ids = [item.station_id for item in basins]
 
     exact_match = []
@@ -81,7 +82,7 @@ def check_codes(basins, coops):
                         try:
                             assert item.station_name[0:4] == x.station_name[0:4]
                             close_enough.append(item)
-                        except:
+                        except:  # TODO
                             oh_no.append(item)
                             print(item.station_id)
                             print(item.station_name + ',' + item.latitude + ',' + item.longitude)
@@ -114,8 +115,11 @@ def assign_in_basins_attribute(basins, coops):
     basins_ids = [item.station_id for item in basins]
     counter = 0
 
-    with open(os.path.join(os.getcwd(), 'src', 'break_with_basins.csv'), 'w') as file:
-        file.write('station_id, station_name, BASINS_start_date, BASINS_end_date, COOP_start_date, COOP_end_date \n')
+    header = ("station_id,station_name,BASINS_start_date,BASINS_end_date,"
+              "COOP_start_date,COOP_end_date\n")
+
+    with open(os.path.join('src', 'break_with_basins.csv'), 'w') as file:
+        file.write(header)
         for item in coops:
             if item.station_id in basins_ids:
                 item.in_basins = True
@@ -123,9 +127,13 @@ def assign_in_basins_attribute(basins, coops):
                     if item.station_id == x.station_id:
                         if item.start_date > x.end_date:
                             item.break_with_basins = True
-                            file.write(item.station_id + ',')
-                            file.write(item.station_name + ',')
-                            file.write(str(x.start_date.month) + '/' + str(x.start_date.day) + '/' + str(x.start_date.year) + ',')
+                            to_file = item.station_id + ','
+                            to_file += item.station_name + ','
+                            file.write(to_file)
+                            # file.write(item.station_name + ',')
+                            file.write(str(x.start_date.month) + '/' +
+                                       str(x.start_date.day) + '/' +
+                                       str(x.start_date.year) + ',')
                             file.write(str(x.end_date.month) + '/' + str(x.end_date.day) + '/' + str(x.end_date.year) + ',')
                             file.write(str(item.start_date.month) + '/' + str(item.start_date.day) + '/' + str(item.start_date.year) + ',')
                             file.write(str(item.end_date.month) + '/' + str(item.end_date.day) + '/' + str(item.end_date.year))
@@ -199,7 +207,7 @@ def check_conditions_handled(id, coop_ids, expected_result):
 
 def write_coop_stations_to_use(dummy_station):
 
-    with open(os.path.join(os.getcwd(), 'src', 'coop_stations_to_use.csv'), 'w', newline='') as file:
+    with open(os.path.join('src', 'coop_stations_to_use.csv'), 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(asdict(dummy_station[0]).keys())
         for item in dummy_station:
@@ -230,7 +238,7 @@ if __name__ == '__main__':
     # by commenting out the download_station_inventory_file() line and
     # specifying the filepath directly below
 
-    station_inventory_file = os.path.join(os.getcwd(), 'src', 'HPD_v02r02_stationinv_c20200909.csv')
+    station_inventory_file = os.path.join('src', 'HPD_v02r02_stationinv_c20200909.csv')
     # station_inventory_file = download_station_inventory_file()
 
     basins_stations = common.read_basins_file()
