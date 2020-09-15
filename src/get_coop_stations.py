@@ -145,7 +145,10 @@ def assign_in_basins_attribute(basins, coops):
                             file.write(to_file)
                             counter += 1
 
-    print(f'There are {counter} stations with a gap between the end of BASINS and the start of the COOP record')
+    message = (f"There are {counter} stations with a gap between the end of "
+                "BASINS and the start of the COOP record")
+    print(message)
+
     return coops
 
 
