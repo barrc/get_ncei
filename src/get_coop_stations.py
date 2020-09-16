@@ -1,12 +1,11 @@
 import csv
 import os
 import requests
-
-import common
 from dataclasses import asdict
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
+import common
 
 def download_station_inventory_file():
     """
@@ -32,7 +31,7 @@ def download_station_inventory_file():
     station_inv_file = os.path.join('src', filename)
 
     with open(station_inv_file, 'wb') as file:
-        file.write(r.content)
+        file.write(r_file.content)
 
     return station_inv_file
 
@@ -44,8 +43,6 @@ def read_coop_file(station_inv_file):
     Returns a list of Station objects representing each entry in file
     """
 
-    station_inv_file = os.path.join(os.getcwd(), 'src',
-                                    'HPD_v02r02_stationinv_c20200826.csv')
     stations = []
 
     with open(station_inv_file, 'r') as csv_file:
@@ -98,17 +95,42 @@ def check_codes(basins, coops):
 
     assert (len(exact_match) + len(close_enough) + len(oh_no) + len(not_in_basins)) == len(coop_stations)
 
+def make_decimal(num, debug=False):
+    # if debug:
+    #     print(num, round(Decimal(num), 2))
+    return round(Decimal(num), 2)
+
 def check_lat_lon(basins, coops):
-    # TODO fix up / document this function
     basins_ids = [item.station_id for item in basins]
 
+    mismatched = 0
     for item in coops:
         if item.station_id in basins_ids:
             for x in basins:
                 if item.station_id == x.station_id:
-                    print(item.latitude, x.latitude)
-                    print(Decimal(item.latitude), Decimal(x.latitude))
-                    return
+                    try:
+                        assert make_decimal(item.latitude) == make_decimal(x.latitude)
+                        assert make_decimal(item.longitude) == make_decimal(x.longitude)
+                    except:
+                        # print(abs(make_decimal(item.latitude) - make_decimal(x.latitude)))
+                        if abs(make_decimal(item.latitude) - make_decimal(x.latitude)) <= Decimal(0.06) and \
+                            abs(make_decimal(item.longitude) - make_decimal(x.longitude) <= Decimal(0.06)):
+                            pass
+                        else:
+                            print(item.latitude, item.longitude)
+                            print(x.latitude, x.longitude)
+                            print(item.station_name, ',' , x.station_name)
+                            print(item.station_id)
+                            print('\n')
+                            mismatched += 1
+                        # print(item.latitude, x.latitude, item.longitude, x.longitude)
+                        # print(make_decimal(item.latitude, True), make_decimal(x.latitude, True),
+                        #         make_decimal(item.longitude, True), make_decimal(x.longitude, True))
+
+                        # return
+
+    print(f'mismatched: {mismatched}')
+
 
 def assign_in_basins_attribute(basins, coops):
     """
@@ -285,8 +307,6 @@ if __name__ == '__main__':
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
     coops_to_use = check_years(coop_stations)
 
-
-
     # TODO come up with a better way of formatting this
     check_stations_handled_properly(coops_to_use)
 
@@ -300,4 +320,4 @@ if __name__ == '__main__':
     # check_codes(basins_stations, coop_stations)
 
     # TODO write check_lat_lon function
-    check_lat_lon(basins_stations, coop_stations)
+    # check_lat_lon(basins_stations, coop_stations)
