@@ -7,7 +7,7 @@ CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
 # plan is to keep this date at 1990
 EARLIEST_START_DATE = datetime.datetime(1990, 1, 1)
 
-# set the following variable to the year you are in minus 1
+# set CURRENT_END_YEAR to the year you are in minus 1
 CURRENT_END_YEAR = 2019
 CURRENT_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 CUTOFF_START_DATE = datetime.datetime(CURRENT_END_YEAR - 10 + 1, 1, 1)

@@ -5,6 +5,7 @@ import requests
 import common
 from dataclasses import asdict
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 
 
 def download_station_inventory_file():
@@ -84,9 +85,9 @@ def check_codes(basins, coops):
                             close_enough.append(item)
                         except:  # TODO
                             oh_no.append(item)
-                            print(item.station_id)
-                            print(item.station_name + ',' + item.latitude + ',' + item.longitude)
-                            print(x.station_name + ',' + x.latitude + ',' + x.longitude)
+                            # print(item.station_id)
+                            # print(item.station_name + ',' + item.latitude + ',' + item.longitude)
+                            # print(x.station_name + ',' + x.latitude + ',' + x.longitude)
                             # print(item.station_name, ',', x.station_name)
                             # print(item.latitude, ',', x.latitude)
                             # print(item.longitude, ',', x.longitude)
@@ -97,6 +98,17 @@ def check_codes(basins, coops):
 
     assert (len(exact_match) + len(close_enough) + len(oh_no) + len(not_in_basins)) == len(coop_stations)
 
+def check_lat_lon(basins, coops):
+    # TODO fix up / document this function
+    basins_ids = [item.station_id for item in basins]
+
+    for item in coops:
+        if item.station_id in basins_ids:
+            for x in basins:
+                if item.station_id == x.station_id:
+                    print(item.latitude, x.latitude)
+                    print(Decimal(item.latitude), Decimal(x.latitude))
+                    return
 
 def assign_in_basins_attribute(basins, coops):
     """
@@ -240,6 +252,23 @@ def get_latest_start_date(coops):
     start_dates = [item.start_date for item in coops]
     print(f'The latest start date for a station is {max(start_dates)}')
 
+def check_stations_handled_properly(coops_to_use):
+
+    coops_to_use_ids = [x.station_id for x in coops_to_use]
+    # 332974 -- in_basins, current, no break_with_basins --> use
+    assert check_conditions_handled('332974', coops_to_use_ids, True)
+    # 106174 -- in_basins, not current, no break_with_basins --> use
+    assert check_conditions_handled('106174', coops_to_use_ids, True)
+    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
+    assert check_conditions_handled('121417', coops_to_use_ids, True)
+    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
+    assert check_conditions_handled('059210', coops_to_use_ids, False)
+    # 358717 -- not in_basins, current, more than 10 years --> use
+    assert check_conditions_handled('358717', coops_to_use_ids, True)
+    # 212250 -- not in_basins, current, less than 10 years --> don't use --> NOTE this station may become usable in future
+    assert check_conditions_handled('212250', coops_to_use_ids, False)
+    # 419565 -- not in_basins, not current, more than 10 years --> use
+    assert check_conditions_handled('419565', coops_to_use_ids, True)
 
 if __name__ == '__main__':
     # If you have the most recent station inventory file, you can prevent
@@ -256,23 +285,10 @@ if __name__ == '__main__':
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
     coops_to_use = check_years(coop_stations)
 
-    coops_to_use_ids = [x.station_id for x in coops_to_use]
+
 
     # TODO come up with a better way of formatting this
-    # 332974 -- in_basins, current, no break_with_basins --> use
-    assert check_conditions_handled('332974', coops_to_use_ids, True)
-    # 106174 -- in_basins, not current, no break_with_basins --> use
-    assert check_conditions_handled('106174', coops_to_use_ids, True)
-    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
-    assert check_conditions_handled('121417', coops_to_use_ids, True)
-    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
-    assert check_conditions_handled('059210', coops_to_use_ids, False)
-    # 358717 -- not in_basins, current, more than 10 years --> use
-    assert check_conditions_handled('358717', coops_to_use_ids, True)
-    # 212250 -- not in_basins, current, less than 10 years --> don't use --> NOTE this station may become usable in future
-    assert check_conditions_handled('212250', coops_to_use_ids, False)
-    # 419565 -- not in_basins, not current, more than 10 years --> use
-    assert check_conditions_handled('419565', coops_to_use_ids, True)
+    check_stations_handled_properly(coops_to_use)
 
     write_coop_stations_to_use(coops_to_use)
 
@@ -284,3 +300,4 @@ if __name__ == '__main__':
     # check_codes(basins_stations, coop_stations)
 
     # TODO write check_lat_lon function
+    check_lat_lon(basins_stations, coop_stations)
