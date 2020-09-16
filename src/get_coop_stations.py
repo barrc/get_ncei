@@ -113,8 +113,8 @@ def check_lat_lon(basins, coops):
                         assert make_decimal(item.longitude) == make_decimal(x.longitude)
                     except:
                         # print(abs(make_decimal(item.latitude) - make_decimal(x.latitude)))
-                        if abs(make_decimal(item.latitude) - make_decimal(x.latitude)) <= Decimal(0.06) and \
-                            abs(make_decimal(item.longitude) - make_decimal(x.longitude) <= Decimal(0.06)):
+                        if abs(make_decimal(item.latitude) - make_decimal(x.latitude)) <= Decimal(0.02) and \
+                            abs(make_decimal(item.longitude) - make_decimal(x.longitude) <= Decimal(0.02)):
                             pass
                         else:
                             print(item.latitude, item.longitude)
@@ -301,7 +301,8 @@ if __name__ == '__main__':
     station_inv = os.path.join('src', 'HPD_v02r02_stationinv_c20200909.csv')
     # station_inv = download_station_inventory_file()
 
-    basins_stations = common.read_basins_file()
+    split_basins_data = common.read_basins_file()
+    basins_stations = common.make_basins_stations(split_basins_data)
     coop_stations = read_coop_file(station_inv)
 
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
@@ -320,4 +321,4 @@ if __name__ == '__main__':
     # check_codes(basins_stations, coop_stations)
 
     # TODO write check_lat_lon function
-    # check_lat_lon(basins_stations, coop_stations)
+    check_lat_lon(basins_stations, coop_stations)

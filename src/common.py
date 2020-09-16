@@ -75,10 +75,14 @@ def read_basins_file():
     split_data = [item.strip('\n').split('\t') for item in data]
     header = split_data.pop(0)
 
+    return split_data
+
+def make_basins_stations(data):
+
     stations = [Station(item[0], item[-1],
                         make_basins_date(item[8]),
                         make_basins_date(item[9]),
                         item[4], item[5], True, True)
-                for item in split_data]
+                for item in data]
 
     return stations
