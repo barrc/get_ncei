@@ -30,7 +30,7 @@ class Station:
             match = [x for x in basins if self.station_id == x.station_id]
             assert len(match) == 1
             x = match[0]
-            return(x.end_date + datetime.timedelta(days=1))
+            return x.end_date + datetime.timedelta(days=1)
         else:
             if self.start_date <= EARLIEST_START_DATE:
                 return EARLIEST_START_DATE
@@ -45,7 +45,6 @@ class Station:
             # TODO confirm this is what they want
             # use last complete year
             return datetime.datetime(self.end_date.year - 1, 12, 31)
-            print(self.end_date)
 
 
 def make_date(input_date):

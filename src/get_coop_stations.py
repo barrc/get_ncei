@@ -159,7 +159,7 @@ def check_years(coops):
        10 consecutive years of data since 1990
 
     """
-    coops_to_use = []
+    data = []
 
     for item in coops:
         if item.in_basins:
@@ -168,11 +168,11 @@ def check_years(coops):
                 if item.end_date.year < 2006:  # end year for BASINS
                     pass
                 else:
-                    coops_to_use.append(item)
+                    data.append(item)
             # rule 3 - if gap, only use if 10 years of data
             else:
                 if relativedelta(item.end_date, item.start_date).years >= 10:
-                    coops_to_use.append(item)
+                    data.append(item)
 
             # TODO finalize this
             # if item.start_date
@@ -185,31 +185,35 @@ def check_years(coops):
             if item.station_id == '214546':
                 print('debug')
             if relativedelta(item.end_date, item.start_date).years >= 10:
-                coops_to_use.append(item)
+                data.append(item)
             else:
                 pass
 
-    return coops_to_use
+    return data
 
 
-def check_conditions_handled(id, coop_ids, expected_result):
+def check_conditions_handled(id_, coop_ids, expected_result):
     """
     Checks if station is included in/excluded from coops_to_use as expected
     Returns True if matches expected_result
     """
     if expected_result:
-        return id in coop_ids
+        return id_ in coop_ids
     else:
-        return id not in coop_ids
+        return id_ not in coop_ids
 
 
-def write_coop_stations_to_use(dummy_station):
+def write_coop_stations_to_use(stations):
+    """
+    Writes file containing information about the C-HPD v2 stations
+    that will be used
+    """
 
     filename = os.path.join('src', 'coop_stations_to_use.csv')
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(asdict(dummy_station[0]).keys())
-        for item in dummy_station:
+        writer.writerow(asdict(stations[0]).keys())
+        for item in stations:
             writer.writerow(asdict(item).values())
 
 
@@ -232,33 +236,33 @@ def get_latest_start_date(coops):
     print(f'The latest start date for a station is {max(start_dates)}')
 
 
-def check_stations_handled_properly(coops_to_use):
+def check_stations_handled_properly(data):
 
-    coops_to_use_ids = [x.station_id for x in coops_to_use]
+    data_ids = [x.station_id for x in data]
 
     # 332974 -- in_basins, current, no break_with_basins --> use
-    assert check_conditions_handled('332974', coops_to_use_ids, True)
+    assert check_conditions_handled('332974', data_ids, True)
 
     # 106174 -- in_basins, not current, no break_with_basins --> use
-    assert check_conditions_handled('106174', coops_to_use_ids, True)
+    assert check_conditions_handled('106174', data_ids, True)
 
     # 121417 -- in_basins, current, break_with_basins, more than 10 years -->
     # use, but won't be appended to BASINS
-    assert check_conditions_handled('121417', coops_to_use_ids, True)
+    assert check_conditions_handled('121417', data_ids, True)
 
     # 059210 -- in_basins, not current, break_with_basins, less than 10 years
     # --> don't use
-    assert check_conditions_handled('059210', coops_to_use_ids, False)
+    assert check_conditions_handled('059210', data_ids, False)
 
     # 358717 -- not in_basins, current, more than 10 years --> use
-    assert check_conditions_handled('358717', coops_to_use_ids, True)
+    assert check_conditions_handled('358717', data_ids, True)
 
     # 212250 -- not in_basins, current, less than 10 years --> don't use -->
     # NOTE this station may become usable in future
-    assert check_conditions_handled('212250', coops_to_use_ids, False)
+    assert check_conditions_handled('212250', data_ids, False)
 
     # 419565 -- not in_basins, not current, more than 10 years --> use
-    assert check_conditions_handled('419565', coops_to_use_ids, True)
+    assert check_conditions_handled('419565', data_ids, True)
 
 
 if __name__ == '__main__':
