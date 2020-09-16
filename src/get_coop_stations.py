@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import common
 
+
 def download_station_inventory_file():
     """
     Downloads the station inventory file for COOP-HPD version 2 from the NOAA
@@ -58,12 +59,12 @@ def read_coop_file(station_inv_file):
     return stations
 
 
-def make_decimal(num, debug=False):
-    # if debug:
-    #     print(num, round(Decimal(num), 2))
+def make_decimal(num):
     return round(Decimal(num), 2)
 
+
 def check_lat_lon(basins, coops):
+    # TODO docstring
     basins_ids = [item.station_id for item in basins]
 
     mismatched = 0
@@ -72,11 +73,15 @@ def check_lat_lon(basins, coops):
             for x in basins:
                 if item.station_id == x.station_id:
                     try:
-                        assert make_decimal(item.latitude) == make_decimal(x.latitude)
-                        assert make_decimal(item.longitude) == make_decimal(x.longitude)
-                    except:
-                        if abs(make_decimal(item.latitude) - make_decimal(x.latitude)) <= Decimal(0.02) and \
-                            abs(make_decimal(item.longitude) - make_decimal(x.longitude) <= Decimal(0.02)):
+                        i_lat = make_decimal(item.latitude)
+                        x_lat = make_decimal(x.latitude)
+                        i_lon = make_decimal(item.longitude)
+                        x_lon = make_decimal(x.longitude)
+                        assert i_lat == x_lat
+                        assert i_lon == x_lon
+                    except AssertionError:
+                        if (abs(i_lat - x_lat) <= Decimal(0.02) and
+                            abs(i_lon - x_lon) <= Decimal(0.02)):
                             pass
                         else:
                             mismatched += 1
