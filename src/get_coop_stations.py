@@ -81,7 +81,7 @@ def check_lat_lon(basins, coops):
                         assert i_lon == x_lon
                     except AssertionError:
                         if (abs(i_lat - x_lat) <= Decimal(0.02) and
-                            abs(i_lon - x_lon) <= Decimal(0.02)):
+                                abs(i_lon - x_lon) <= Decimal(0.02)):
                             pass
                         else:
                             mismatched += 1
@@ -231,23 +231,35 @@ def get_latest_start_date(coops):
     start_dates = [item.start_date for item in coops]
     print(f'The latest start date for a station is {max(start_dates)}')
 
+
 def check_stations_handled_properly(coops_to_use):
 
     coops_to_use_ids = [x.station_id for x in coops_to_use]
+
     # 332974 -- in_basins, current, no break_with_basins --> use
     assert check_conditions_handled('332974', coops_to_use_ids, True)
+
     # 106174 -- in_basins, not current, no break_with_basins --> use
     assert check_conditions_handled('106174', coops_to_use_ids, True)
-    # 121417 -- in_basins, current, break_with_basins, more than 10 years --> use, but won't be appended to BASINS
+
+    # 121417 -- in_basins, current, break_with_basins, more than 10 years -->
+    # use, but won't be appended to BASINS
     assert check_conditions_handled('121417', coops_to_use_ids, True)
-    # 059210 -- in_basins, not current, break_with_basins, less than 10 years --> don't use
+
+    # 059210 -- in_basins, not current, break_with_basins, less than 10 years
+    # --> don't use
     assert check_conditions_handled('059210', coops_to_use_ids, False)
+
     # 358717 -- not in_basins, current, more than 10 years --> use
     assert check_conditions_handled('358717', coops_to_use_ids, True)
-    # 212250 -- not in_basins, current, less than 10 years --> don't use --> NOTE this station may become usable in future
+
+    # 212250 -- not in_basins, current, less than 10 years --> don't use -->
+    # NOTE this station may become usable in future
     assert check_conditions_handled('212250', coops_to_use_ids, False)
+
     # 419565 -- not in_basins, not current, more than 10 years --> use
     assert check_conditions_handled('419565', coops_to_use_ids, True)
+
 
 if __name__ == '__main__':
     # If you have the most recent station inventory file, you can prevent
@@ -274,5 +286,4 @@ if __name__ == '__main__':
     get_earliest_end_date(coop_stations)
     get_latest_start_date(coop_stations)
 
-    # TODO write check_lat_lon function
     check_lat_lon(basins_stations, coop_stations)
