@@ -51,7 +51,7 @@ def get_data(coop_stations):
     with open(os.path.join(RAW_DATA_DIR, station.station_id + '.csv'), 'wb') as file:
         file.write(r.content)
 
-def process_data(station, basins):
+def process_data(station, basins, start_date, end_date):
     with open(os.path.join(RAW_DATA_DIR, station.station_id + '.csv'), 'rb') as file:
         data = file.readlines()
 
@@ -61,12 +61,6 @@ def process_data(station, basins):
     debug_year_precip = 0
     missing = 0
     partial = 0
-
-    coop_start_date = station.get_start_date_to_use(basins)
-    coop_end_date = station.get_end_date_to_use(basins)
-
-    print(coop_start_date)
-    print(coop_end_date)
 
     for item in data:
 
@@ -113,7 +107,8 @@ def process_data(station, basins):
 
 if __name__  == '__main__':
     coop_stations_to_use = get_stations()
-    basins_stations = common.read_basins_file()
+    split_basins_data = common.read_basins_file()
+    basins_stations = common.make_basins_stations(split_basins_data)
     # print(basins_stations)
 
     # get_data(coop_stations_to_use[2]) # 2 -> ALBERTA
@@ -123,8 +118,12 @@ if __name__  == '__main__':
     # which_station_id = '106174' # in BASINS and not current
     which_station_id = '358717' # not in BASINS and current
     which_station_id = '214546'
+    which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
+    which_station_id = '352867'
 
     for item in coop_stations_to_use:
         if item.station_id == which_station_id:
             get_data(item)
-            process_data(item, basins_stations)
+            s_date = item.get_start_date_to_use(basins_stations)
+            e_date = item.get_end_date_to_use(basins_stations)
+            process_data(item, basins_stations, s_date, e_date)
