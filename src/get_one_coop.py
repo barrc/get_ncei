@@ -62,6 +62,7 @@ def process_data(station, basins, start_date, end_date):
     missing = 0
     partial = 0
 
+    to_file = ''
     for item in data:
 
         split_item = item.split(b',')
@@ -99,6 +100,50 @@ def process_data(station, basins, start_date, end_date):
 
             # debug_year_precip += sum(float_precip)
 
+
+
+            counter = 0
+            for value in float_precip:
+                if value != 0:
+                    if counter == 0:
+                        temp_date = actual_date - datetime.timedelta(days=1)
+                        str_month = str(temp_date.month)
+                        str_day = str(temp_date.day)
+                        str_year = str(temp_date.year)
+                        str_hour = '24'
+                    else:
+                        str_month = str(actual_date.month)
+                        str_day = str(actual_date.day)
+                        str_year = str(actual_date.year)
+                        str_hour = str(counter)
+
+                    to_file += station.station_id + '           '
+                    to_file += str_year + '  '
+                    to_file += str_month + '  '
+                    to_file += str_day + '  '
+                    to_file += str_hour + '  '
+                    to_file += '0'
+                    if len(str_month) + len(str_day) + len(str_hour) == 3:
+                        to_file += '     '
+                    elif len(str_month) + len(str_day) + len(str_hour) == 4:
+                        to_file += '    '
+                    elif len(str_month) + len(str_day) + len(str_hour) == 5:
+                        to_file += '   '
+                    else:
+                        to_file += '   '
+                    if value == -9999:
+                        to_file += str(value)
+                    else:
+                        to_file += f'{value/100:.3f}'
+                    to_file += '     \n'
+                counter += 1
+
+
+
+
+    with open(os.path.join('src', 'processed_coop_data', station.station_id + '.dat'), 'w') as file:
+        file.write(to_file)
+
     print(debug_year_precip)
     print(missing)
     print(partial)
@@ -123,7 +168,7 @@ if __name__  == '__main__':
 
     for item in coop_stations_to_use:
         if item.station_id == which_station_id:
-            get_data(item)
+            # get_data(item)
             s_date = item.get_start_date_to_use(basins_stations)
             e_date = item.get_end_date_to_use(basins_stations)
             process_data(item, basins_stations, s_date, e_date)
