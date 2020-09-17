@@ -6,17 +6,19 @@ import datetime
 import common
 
 RAW_DATA_DIR = os.path.join(os.getcwd(), 'src', 'raw_coop_data')
+PROCESSED_DATA_DIR = os.path.join(os.getcwd(), 'src', 'processed_coop_data')
 
 
 def str_date_to_datetime(str_date):
     x = str_date.split(' ')[0].split('-')
     return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
 
+
 def get_stations():
     stations = []
 
-    with open(os.path.join(os.getcwd(), 'src', 'coop_stations_to_use.csv'), 'r') as csv_file:
-        coop_reader = csv.reader(csv_file)
+    with open(os.path.join('src', 'coop_stations_to_use.csv'), 'r') as file:
+        coop_reader = csv.reader(file)
         header = next(coop_reader)
         for row in coop_reader:
             if row[6] == 'True':
@@ -27,32 +29,33 @@ def get_stations():
                 break_with_basins = True
             else:
                 break_with_basins = False
-            stations.append(common.Station(row[0], row[1], str_date_to_datetime(row[2]),
-                                           str_date_to_datetime(row[3]), row[4], row[5],
-                                           in_basins, break_with_basins))
-
+            stations.append(common.Station(row[0], row[1],
+                            str_date_to_datetime(row[2]),
+                            str_date_to_datetime(row[3]), row[4], row[5],
+                            in_basins, break_with_basins))
 
     return stations
+
 
 def get_data(coop_stations):
     base_url = common.CHPD_BASE_URL + 'access/'
 
     # for station in coop_stations:
     station = coop_stations
-    # print(station.start_date, station.end_date)]
-    #TODO might not need one of those 0's
     the_url = base_url + 'USC00' + station.station_id + '.csv'
-    # print(the_url)
 
     r = requests.get(the_url)
     print(r.content)
     print(r.status_code)
 
-    with open(os.path.join(RAW_DATA_DIR, station.station_id + '.csv'), 'wb') as file:
+    out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
+    with open(out_file, 'wb') as file:
         file.write(r.content)
 
+
 def process_data(station, basins, start_date, end_date):
-    with open(os.path.join(RAW_DATA_DIR, station.station_id + '.csv'), 'rb') as file:
+    out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
+    with open(out_file, 'rb') as file:
         data = file.readlines()
 
     header = data.pop(0)
@@ -67,7 +70,8 @@ def process_data(station, basins, start_date, end_date):
 
         split_item = item.split(b',')
         raw_date = split_item[4].decode().split('-')
-        actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]), int(raw_date[2]))
+        actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]),
+                                        int(raw_date[2]))
 
         if actual_date.year == 2006:
             the_value = item.decode().strip('\n').split(',')
@@ -99,8 +103,6 @@ def process_data(station, basins, start_date, end_date):
                     debug_year_precip += item
 
             # debug_year_precip += sum(float_precip)
-
-
 
             counter = 0
             for value in float_precip:
@@ -138,10 +140,8 @@ def process_data(station, basins, start_date, end_date):
                     to_file += '     \n'
                 counter += 1
 
-
-
-
-    with open(os.path.join('src', 'processed_coop_data', station.station_id + '.dat'), 'w') as file:
+    out_file = os.path.join(PROCESSED_DATA_DIR, station.station_id + '.dat')
+    with open(out_file, 'w') as file:
         file.write(to_file)
 
     print(debug_year_precip)
@@ -149,8 +149,7 @@ def process_data(station, basins, start_date, end_date):
     print(partial)
 
 
-
-if __name__  == '__main__':
+if __name__ == '__main__':
     coop_stations_to_use = get_stations()
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
@@ -160,8 +159,8 @@ if __name__  == '__main__':
     # Alberta is "most" typical -- BASINS goes thru 12/31/2006 and COOP is current
 
     which_station_id = '332974'  # in BASINS and current
-    # which_station_id = '106174' # in BASINS and not current
-    which_station_id = '358717' # not in BASINS and current
+    # which_station_id = '106174'  # in BASINS and not current
+    which_station_id = '358717'  # not in BASINS and current
     which_station_id = '214546'
     which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
     which_station_id = '352867'
