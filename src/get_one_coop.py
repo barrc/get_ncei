@@ -75,15 +75,13 @@ def process_data(station, basins, start_date, end_date):
 
         if actual_date.year == 2006:
             if previous_date:
-                # If an entire day is missing, it is not included in the .csv from NCEI
+                # If an entire day is missing, it's not included in the .csv
                 # Need to flag those as missing explicitly
                 days_diff = (actual_date - previous_date).days
                 if days_diff > 1:
                     print(previous_date, actual_date)
                     new_days = [previous_date + datetime.timedelta(n)
                                 for n in range(1, days_diff)]
-                    for new_day in new_days:
-                        to_file += station_id
 
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
