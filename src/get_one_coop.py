@@ -53,6 +53,10 @@ def get_data(coop_stations):
         file.write(r.content)
 
 
+def get_str_date(input_date):
+    return str(input_date.month), str(input_date.day), str(input_date.year)
+
+
 def process_data(station, basins, start_date, end_date):
     out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
     with open(out_file, 'rb') as file:
@@ -97,11 +101,9 @@ def process_data(station, basins, start_date, end_date):
             assert the_value[-1] == 'C'
 
             for item in precip_values:
-                # print(item)
                 if item == '-9999':
                     missing += 1
                     item = 0
-                    # print(item)
 
             float_precip = [int(x) for x in precip_values]  # -9999?
 
@@ -111,21 +113,15 @@ def process_data(station, basins, start_date, end_date):
                 else:
                     debug_year_precip += item
 
-            # debug_year_precip += sum(float_precip)
-
             counter = 0
             for value in float_precip:
                 if value != 0:
                     if counter == 0:
                         temp_date = actual_date - datetime.timedelta(days=1)
-                        str_month = str(temp_date.month)
-                        str_day = str(temp_date.day)
-                        str_year = str(temp_date.year)
+                        str_month, str_day, str_year = get_str_date(temp_date)
                         str_hour = '24'
                     else:
-                        str_month = str(actual_date.month)
-                        str_day = str(actual_date.day)
-                        str_year = str(actual_date.year)
+                        str_month, str_day, str_year = get_str_date(actual_date)
                         str_hour = str(counter)
 
                     to_file += station.station_id + '           '
