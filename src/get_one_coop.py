@@ -59,13 +59,13 @@ def process_data(station, basins, start_date, end_date):
         data = file.readlines()
 
     header = data.pop(0)
-    # print(header)
 
     debug_year_precip = 0
     missing = 0
     partial = 0
 
     to_file = ''
+    previous_date = False
     for item in data:
 
         split_item = item.split(b',')
@@ -74,6 +74,17 @@ def process_data(station, basins, start_date, end_date):
                                         int(raw_date[2]))
 
         if actual_date.year == 2006:
+            if previous_date:
+                # If an entire day is missing, it is not included in the .csv from NCEI
+                # Need to flag those as missing explicitly
+                days_diff = (actual_date - previous_date).days
+                if days_diff > 1:
+                    print(previous_date, actual_date)
+                    new_days = [previous_date + datetime.timedelta(n)
+                                for n in range(1, days_diff)]
+                    for new_day in new_days:
+                        to_file += station_id
+
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
 
@@ -139,6 +150,8 @@ def process_data(station, basins, start_date, end_date):
                         to_file += f'{value/100:.3f}'
                     to_file += '     \n'
                 counter += 1
+
+        previous_date = actual_date
 
     out_file = os.path.join(PROCESSED_DATA_DIR, station.station_id + '.dat')
     with open(out_file, 'w') as file:
