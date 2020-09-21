@@ -54,7 +54,7 @@ def get_data(coop_stations):
 
 
 def get_str_date(input_date):
-    return str(input_date.month), str(input_date.day), str(input_date.year)
+    return str(input_date.year) + '  ' + str(input_date.month) + '  ' + str(input_date.day) + '  '
 
 
 def process_data(station, basins, start_date, end_date):
@@ -100,11 +100,6 @@ def process_data(station, basins, start_date, end_date):
             assert the_value[-2] == ' '
             assert the_value[-1] == 'C'
 
-            for item in precip_values:
-                if item == '-9999':
-                    missing += 1
-                    item = 0
-
             float_precip = [int(x) for x in precip_values]  # -9999?
 
             for item in float_precip:
@@ -118,31 +113,30 @@ def process_data(station, basins, start_date, end_date):
                 if value != 0:
                     if counter == 0:
                         temp_date = actual_date - datetime.timedelta(days=1)
-                        str_month, str_day, str_year = get_str_date(temp_date)
+                        str_date = get_str_date(temp_date)
                         str_hour = '24'
                     else:
-                        str_month, str_day, str_year = get_str_date(actual_date)
+                        str_date = get_str_date(actual_date)
                         str_hour = str(counter)
 
                     to_file += station.station_id + '           '
-                    to_file += str_year + '  '
-                    to_file += str_month + '  '
-                    to_file += str_day + '  '
-                    to_file += str_hour + '  '
-                    to_file += '0'
-                    if len(str_month) + len(str_day) + len(str_hour) == 3:
+                    to_file += str_date + str_hour + '  0'
+                    if len(str_date) + len(str_hour) == 13:
                         to_file += '     '
-                    elif len(str_month) + len(str_day) + len(str_hour) == 4:
+                    elif len(str_date) + len(str_hour) == 14:
                         to_file += '    '
-                    elif len(str_month) + len(str_day) + len(str_hour) == 5:
+                    elif len(str_date) + len(str_hour) == 15:
                         to_file += '   '
                     else:
-                        to_file += '   '
+                        to_file += '  '
                     if value == -9999:
+                        # FORNOW -- eventually might fill here instead of
+                        # writing -9999 to file
                         to_file += str(value)
                     else:
                         to_file += f'{value/100:.3f}'
                     to_file += '     \n'
+
                 counter += 1
 
         previous_date = actual_date
