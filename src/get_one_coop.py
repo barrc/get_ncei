@@ -57,6 +57,41 @@ def get_str_date(input_date):
     return str(input_date.year) + '  ' + str(input_date.month) + '  ' + str(input_date.day) + '  '
 
 
+def get_line(val, count, date, station_id):
+    to_file = ''
+    if val == 0:
+        return to_file
+    else:
+        if count == 0:
+            temp_date = date - datetime.timedelta(days=1)
+            str_date = get_str_date(temp_date)
+            str_hour = '24'
+        else:
+            str_date = get_str_date(date)
+            str_hour = str(count)
+
+        to_file += station_id + '           '
+        to_file += str_date + str_hour + '  0'
+        if len(str_date) + len(str_hour) == 13:
+            to_file += '     '
+        elif len(str_date) + len(str_hour) == 14:
+            to_file += '    '
+        elif len(str_date) + len(str_hour) == 15:
+            to_file += '   '
+        else:
+            to_file += '  '
+        if val == -9999:
+            # FORNOW -- eventually might fill here instead of
+            # writing -9999 to file
+            to_file += str(val)
+        else:
+            to_file += f'{val/100:.3f}'
+        to_file += '     \n'
+
+        return to_file
+
+
+
 def process_data(station, basins, start_date, end_date):
     out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
     with open(out_file, 'rb') as file:
@@ -86,6 +121,13 @@ def process_data(station, basins, start_date, end_date):
                     print(previous_date, actual_date)
                     new_days = [previous_date + datetime.timedelta(n)
                                 for n in range(1, days_diff)]
+                    float_precip = [-9999 for i in range(0, 24)]
+                    # FORNOW -- change when missing data plan determined
+                    for new_day in new_days:
+                        counter = 0
+                        for value in float_precip:
+                            to_file += get_line(value, counter, new_day, station.station_id)
+                            counter += 1
 
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
@@ -110,33 +152,7 @@ def process_data(station, basins, start_date, end_date):
 
             counter = 0
             for value in float_precip:
-                if value != 0:
-                    if counter == 0:
-                        temp_date = actual_date - datetime.timedelta(days=1)
-                        str_date = get_str_date(temp_date)
-                        str_hour = '24'
-                    else:
-                        str_date = get_str_date(actual_date)
-                        str_hour = str(counter)
-
-                    to_file += station.station_id + '           '
-                    to_file += str_date + str_hour + '  0'
-                    if len(str_date) + len(str_hour) == 13:
-                        to_file += '     '
-                    elif len(str_date) + len(str_hour) == 14:
-                        to_file += '    '
-                    elif len(str_date) + len(str_hour) == 15:
-                        to_file += '   '
-                    else:
-                        to_file += '  '
-                    if value == -9999:
-                        # FORNOW -- eventually might fill here instead of
-                        # writing -9999 to file
-                        to_file += str(value)
-                    else:
-                        to_file += f'{value/100:.3f}'
-                    to_file += '     \n'
-
+                to_file += get_line(value, counter, actual_date, station.station_id)
                 counter += 1
 
         previous_date = actual_date
