@@ -51,7 +51,7 @@ def read_coop_file(station_inv_file):
         header = next(station_inv_reader)
         for row in station_inv_reader:
             por = row[9].split('-')
-            stations.append(common.Station(row[0][-6:], row[5],
+            stations.append(common.Station(row[0], row[5],
                                            common.make_date(por[0]),
                                            common.make_date(por[1]),
                                            row[1], row[2], False, False))
@@ -69,9 +69,9 @@ def check_lat_lon(basins, coops):
 
     mismatched = 0
     for item in coops:
-        if item.station_id in basins_ids:
+        if item.station_id[-6:] in basins_ids:
             for x in basins:
-                if item.station_id == x.station_id:
+                if item.station_id[-6:] == x.station_id:
                     try:
                         i_lat = make_decimal(item.latitude)
                         x_lat = make_decimal(x.latitude)
@@ -112,10 +112,10 @@ def assign_in_basins_attribute(basins, coops):
     with open(os.path.join('src', 'break_with_basins.csv'), 'w') as file:
         file.write(header)
         for item in coops:
-            if item.station_id in basins_ids:
+            if item.station_id[-6:] in basins_ids:
                 item.in_basins = True
                 for x in basins:
-                    if item.station_id == x.station_id:
+                    if item.station_id[-6:] == x.station_id:
                         if item.start_date > x.end_date:
                             item.break_with_basins = True
                             to_file = item.station_id + ','
@@ -182,7 +182,7 @@ def check_years(coops):
             #     coops_to_use.append(item)
         else:
             # if not in BASINS, use if >= ten years of data from recent past
-            if item.station_id == '214546':
+            if item.station_id[-6:] == '214546':
                 print('debug')
             if relativedelta(item.end_date, item.start_date).years >= 10:
                 data.append(item)
@@ -238,7 +238,7 @@ def get_latest_start_date(coops):
 
 def check_stations_handled_properly(data):
 
-    data_ids = [x.station_id for x in data]
+    data_ids = [x.station_id[-6:] for x in data]
 
     # 332974 -- in_basins, current, no break_with_basins --> use
     assert check_conditions_handled('332974', data_ids, True)
