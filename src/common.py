@@ -1,6 +1,6 @@
 import datetime
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
 
