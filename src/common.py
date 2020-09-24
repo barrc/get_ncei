@@ -27,7 +27,7 @@ class Station:
 
     def get_start_date_to_use(self, basins):
         if self.in_basins:
-            match = [x for x in basins if self.station_id == x.station_id]
+            match = [x for x in basins if self.station_id[-6:] == x.station_id]
             assert len(match) == 1
             x = match[0]
             return x.end_date + datetime.timedelta(days=1)
