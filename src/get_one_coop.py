@@ -42,7 +42,7 @@ def get_data(coop_stations):
 
     # for station in coop_stations:
     station = coop_stations
-    the_url = base_url + 'USC00' + station.station_id + '.csv'
+    the_url = base_url + station.station_id + '.csv'
 
     r = requests.get(the_url)
     print(r.content)
@@ -91,6 +91,17 @@ def get_line(val, count, date, station_id):
         return to_file
 
 
+def check_last_records(val):
+    partial = 0
+    # check last records  TODO what was the_value[-5] ??
+    # print(val[-5])
+    assert val[-4] == ' '
+    # TODO how to handle partial?
+    if val[-3] != ' ':  # 'P' is for partial
+        partial += 1
+    assert val[-2] == ' '
+    assert val[-1] == 'C'
+
 
 def process_data(station, basins, start_date, end_date):
     out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
@@ -105,14 +116,14 @@ def process_data(station, basins, start_date, end_date):
 
     to_file = ''
     previous_date = False
-    for item in data:
 
+    for item in data:
         split_item = item.split(b',')
         raw_date = split_item[4].decode().split('-')
         actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]),
                                         int(raw_date[2]))
 
-        if actual_date.year == 2006:
+        if actual_date.year == 2010:
             if previous_date:
                 # If an entire day is missing, it's not included in the .csv
                 # Need to flag those as missing explicitly
@@ -126,21 +137,24 @@ def process_data(station, basins, start_date, end_date):
                     for new_day in new_days:
                         counter = 0
                         for value in float_precip:
-                            to_file += get_line(value, counter, new_day, station.station_id)
+                            to_file += get_line(value, counter, new_day, station.station_id[-6:])
                             counter += 1
 
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
 
+            measurement_flag_values = the_value[7:-5:5]
+            try:
+                for x in measurement_flag_values:
+                    assert x == ' ' or x == 'Z' or x == 'g'
+            except:
+                print(x)
+            quality_flag_values = the_value[8:-5:5]
+            primary_source_flag_values = the_value[9:-5:5]
+            secondary_source_flag_values = the_value[10:-5:5]
             precip_values = the_value[6:-5:5]
 
-            # check last records
-            # print(the_value[-5])
-            assert the_value[-4] == ' '
-            if the_value[-3] != ' ':  # 'P' is for partial
-                partial += 1
-            assert the_value[-2] == ' '
-            assert the_value[-1] == 'C'
+            check_last_records(the_value)
 
             float_precip = [int(x) for x in precip_values]  # -9999?
 
@@ -152,12 +166,12 @@ def process_data(station, basins, start_date, end_date):
 
             counter = 0
             for value in float_precip:
-                to_file += get_line(value, counter, actual_date, station.station_id)
+                to_file += get_line(value, counter, actual_date, station.station_id[-6:])
                 counter += 1
 
         previous_date = actual_date
 
-    out_file = os.path.join(PROCESSED_DATA_DIR, station.station_id + '.dat')
+    out_file = os.path.join(PROCESSED_DATA_DIR, station.station_id[-6:] + '.dat')
     with open(out_file, 'w') as file:
         file.write(to_file)
 
@@ -180,7 +194,9 @@ if __name__ == '__main__':
     which_station_id = '358717'  # not in BASINS and current
     which_station_id = '214546'
     which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
-    which_station_id = '352867'
+    # which_station_id = '352867'
+    # which_station_id = 'USC00304174'
+    which_station_id = 'USW00003952'
 
     for item in coop_stations_to_use:
         if item.station_id == which_station_id:
