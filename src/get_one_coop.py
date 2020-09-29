@@ -2,6 +2,8 @@ import csv
 import os
 import requests
 import datetime
+import numpy as np
+import matplotlib.pyplot as plt
 
 import common
 
@@ -100,7 +102,7 @@ def check_last_records(val):
     if val[-3] != ' ':  # 'P' is for partial
         partial += 1
     assert val[-2] == ' '
-    assert val[-1] == 'C'
+    assert val[-1] == 'C' or val[-1] == ' '
 
 
 def process_data(station, basins, start_date, end_date):
@@ -123,13 +125,13 @@ def process_data(station, basins, start_date, end_date):
         actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]),
                                         int(raw_date[2]))
 
-        if actual_date.year == 2010:
+        if actual_date.year >= start_date.year:
             if previous_date:
                 # If an entire day is missing, it's not included in the .csv
                 # Need to flag those as missing explicitly
                 days_diff = (actual_date - previous_date).days
                 if days_diff > 1:
-                    print(previous_date, actual_date)
+                    # print(previous_date, actual_date)
                     new_days = [previous_date + datetime.timedelta(n)
                                 for n in range(1, days_diff)]
                     float_precip = [-9999 for i in range(0, 24)]
@@ -179,6 +181,81 @@ def process_data(station, basins, start_date, end_date):
     print(missing)
     print(partial)
 
+def read_precip(start_date, end_date, station_file):
+
+    with open(station_file, 'r') as file:
+        data = file.readlines()
+
+    split_data = [item.split() for item in data]
+    years = dict.fromkeys(list(range(start_date.year, end_date.year)), 0)
+    for item in split_data:
+        items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
+        if items_date > start_date:
+            if items_date.year in years:
+                if item[-1] == '-9999':
+                    pass
+                else:
+                    years[items_date.year] += float(item[-1])
+
+    return (split_data, years)
+
+def date_and_cumsum(data, year):
+    for item in data:
+        if float(item[-1]) < 0:
+            item[-1] = 0
+    r = [(datetime.datetime(int(item[1]), int(item[2]), int(item[3]),
+            int(item[4])), float(item[-1])) for item in data if int(item[1]) == year]
+
+    for item in r:
+        if item[-1] < 0:
+            print(item)
+    x, v = zip(*[(d[0], d[1]) for d in r])
+    v = np.array(v).cumsum()  # cumulative sum of y values
+
+    return (x, v)
+
+def plot_cumulative_by_year(data_1, data_2, start_year, end_year):
+    for item in data_1:
+        if int(item[4]) > 23:
+            temp_datetime = datetime.datetime(int(item[1]), int(item[2]), int(item[3]), 0)
+            temp_datetime += datetime.timedelta(days=1)
+
+            item[1] = temp_datetime.year
+            item[2] = temp_datetime.month
+            item[3] = temp_datetime.day
+            item[4] = 0
+    for item in data_2:
+        if int(item[4]) > 23:
+            temp_datetime = datetime.datetime(int(item[1]), int(item[2]), int(item[3]), 0)
+            temp_datetime += datetime.timedelta(days=1)
+
+            item[1] = temp_datetime.year
+            item[2] = temp_datetime.month
+            item[3] = temp_datetime.day
+            item[4] = 0
+
+    years = list(range(start_year, end_year))
+
+    for year in years:
+        x_1, v_1 = date_and_cumsum(data_1, year)
+        x_2, v_2 = date_and_cumsum(data_2, year)
+
+        # now plot the results
+        fig, ax = plt.subplots(1)
+
+        ax.plot(x_1, v_1, '-o', label='BASINS')
+        ax.plot(x_2, v_2, '-o', label='ISD')
+
+        fig.autofmt_xdate()
+        plt.title(year)
+        ax.legend()
+        ax.grid()
+
+        plt.show()
+
+
+
+
 
 if __name__ == '__main__':
     coop_stations_to_use = get_stations()
@@ -195,12 +272,24 @@ if __name__ == '__main__':
     which_station_id = '214546'
     which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
     # which_station_id = '352867'
-    # which_station_id = 'USC00304174'
-    which_station_id = 'USW00003952'
+    which_station_id = 'USC00304174'  # Lubbock
+    which_station_id = 'USC00134101'  # Iowa City
 
     for item in coop_stations_to_use:
         if item.station_id == which_station_id:
             # get_data(item)
-            s_date = item.get_start_date_to_use(basins_stations)
-            e_date = item.get_end_date_to_use(basins_stations)
-            process_data(item, basins_stations, s_date, e_date)
+            # for comparison
+            s_date = datetime.datetime(1979, 1, 1)
+            e_date = datetime.datetime(2006, 12, 31)
+            # s_date = item.get_start_date_to_use(basins_stations)
+            # e_date = item.get_end_date_to_use(basins_stations)
+            print(s_date, e_date)
+            # process_data(item, basins_stations, s_date, e_date)
+            coop_filename = os.path.join(PROCESSED_DATA_DIR, item.station_id[-6:] + '.dat')
+            split_coop_data, coop_years = read_precip(s_date, e_date, coop_filename)
+            basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
+            basins_filename = os.path.join(basins_dir, 'IA' + item.station_id[-6:] + '.dat')
+            split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
+
+            print(coop_years, basins_years)
+            plot_cumulative_by_year(split_basins_data, split_coop_data, s_date.year, e_date.year)
