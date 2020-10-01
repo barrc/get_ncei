@@ -31,9 +31,9 @@ def get_stations():
                 break_with_basins = True
             else:
                 break_with_basins = False
-            stations.append(common.Station(row[0], row[1],
-                            str_date_to_datetime(row[2]),
-                            str_date_to_datetime(row[3]), row[4], row[5],
+            stations.append(common.Station(row[0], row[1], row[2],
+                            str_date_to_datetime(row[3]),
+                            str_date_to_datetime(row[4]), row[5], row[6],
                             in_basins, break_with_basins))
 
     return stations
@@ -234,7 +234,7 @@ def plot_cumulative_by_year(data_1, data_2, start_year, end_year):
             item[3] = temp_datetime.day
             item[4] = 0
 
-    years = list(range(start_year, end_year))
+    years = list(range(start_year, end_year + 1))
 
     for year in years:
         x_1, v_1 = date_and_cumsum(data_1, year)
@@ -272,8 +272,8 @@ if __name__ == '__main__':
     which_station_id = '214546'
     which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
     # which_station_id = '352867'
-    which_station_id = 'USC00304174'  # Lubbock
     which_station_id = 'USC00134101'  # Iowa City
+    # which_station_id = 'USC00304174'  # Ithaca
 
     for item in coop_stations_to_use:
         if item.station_id == which_station_id:
@@ -288,7 +288,7 @@ if __name__ == '__main__':
             coop_filename = os.path.join(PROCESSED_DATA_DIR, item.station_id[-6:] + '.dat')
             split_coop_data, coop_years = read_precip(s_date, e_date, coop_filename)
             basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
-            basins_filename = os.path.join(basins_dir, 'IA' + item.station_id[-6:] + '.dat')
+            basins_filename = os.path.join(basins_dir, item.state + item.station_id[-6:] + '.dat')
             split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
 
             print(coop_years, basins_years)

@@ -18,6 +18,7 @@ CUTOFF_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 class Station:
     station_id: str
     station_name: str
+    state: str
     start_date: datetime.datetime
     end_date: datetime.datetime
     latitude: str
@@ -79,7 +80,7 @@ def read_basins_file():
 
 def make_basins_stations(data):
 
-    stations = [Station(item[0], item[-1],
+    stations = [Station(item[0], item[-1], item[2][0:2].upper(),
                         make_basins_date(item[8]),
                         make_basins_date(item[9]),
                         item[4], item[5], True, True)

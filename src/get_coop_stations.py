@@ -51,7 +51,7 @@ def read_coop_file(station_inv_file):
         header = next(station_inv_reader)
         for row in station_inv_reader:
             por = row[9].split('-')
-            stations.append(common.Station(row[0], row[5],
+            stations.append(common.Station(row[0], row[5], row[4],
                                            common.make_date(por[0]),
                                            common.make_date(por[1]),
                                            row[1], row[2], False, False))
@@ -106,8 +106,8 @@ def assign_in_basins_attribute(basins, coops):
     basins_ids = [item.station_id for item in basins]
     counter = 0
 
-    header = ("station_id,station_name,BASINS_start_date,BASINS_end_date,"
-              "COOP_start_date,COOP_end_date\n")
+    header = ("station_id,station_name,state,BASINS_start_date,"
+              "BASINS_end_date,COOP_start_date,COOP_end_date\n")
 
     with open(os.path.join('src', 'break_with_basins.csv'), 'w') as file:
         file.write(header)

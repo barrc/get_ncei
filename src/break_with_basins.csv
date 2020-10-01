@@ -1,4 +1,4 @@
-station_id,station_name,BASINS_start_date,BASINS_end_date,COOP_start_date,COOP_end_date
+station_id,station_name,state,BASINS_start_date,BASINS_end_date,COOP_start_date,COOP_end_date
 USC00026037,OAK CREEK CANYON,6/30/1982,12/31/2006,8/14/2016,7/13/2020
 USC00031948,DEQUEEN,1/1/1970,12/31/2006,3/10/2008,5/7/2020
 USC00043417,GILROY,1/1/1970,12/31/2006,3/28/2019,7/31/2020
