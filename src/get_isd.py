@@ -40,6 +40,27 @@ def read_raw(station_id):
 
     report_types = [x['REPORT_TYPE'] for x in data]
     print(set(report_types))
+
+    precips = []
+    for item in data:
+        try:
+            item['AA1']
+            split_aa1 = item['AA1'].split(',')
+            if split_aa1[0] == '01':
+                precips.append(int(item['AA1'].split(',')[1]))
+            if split_aa1[1] == '0231':
+                print(item)
+        except:
+            pass
+
+    print(max(precips))
+
+
+        #
+        # the_date = item['DATE'].split('-')
+        # if the_date[0] == '2019' and the_date[1] == '12' and the_date[2][0:2] == '30':
+        #     print(item)
+
     # FM-12 | SYNOP report of surface observation from a fixed land station
     # FM-15 | METAR aviation routine weather report
     # FM-16 | SPECI aviation selected special weather report
