@@ -187,7 +187,7 @@ def read_precip(start_date, end_date, station_file):
         data = file.readlines()
 
     split_data = [item.split() for item in data]
-    years = dict.fromkeys(list(range(start_date.year, end_date.year)), 0)
+    years = dict.fromkeys(list(range(start_date.year, end_date.year + 1)), 0)
     for item in split_data:
         items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
         if items_date > start_date:
