@@ -1,10 +1,10 @@
 import os
 
+import common
 
 def parse_d4em_lite():
-    file_path = os.path.join('src', 'D4EMLite_PREC_Details.txt')
-    assert os.path.exists(file_path)
-
+    split_data = common.read_basins_file()
+    print(split_data[0])
 
 if __name__ == '__main__':
     parse_d4em_lite()
