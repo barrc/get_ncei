@@ -265,6 +265,26 @@ def check_stations_handled_properly(data):
     assert check_conditions_handled('419565', data_ids, True)
 
 
+def get_basins_not_in_coop(basins, coops):
+    basins_ids = [item.station_id for item in basins]
+    coop_ids = [item.station_id[-6:] for item in coops]
+    counter = 0
+
+    filename = os.path.join('src', 'basins_not_in_chpd.csv')
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(asdict(basins[0]).keys())
+        for item in basins:
+            if item.station_id not in coop_ids:
+                writer.writerow(asdict(item).values())
+
+
+
+    # for item in coops:
+    #     if item.station_id[-6:] in basins_ids:
+    #         item.in_basins = True
+
+
 if __name__ == '__main__':
     # If you have the most recent station inventory file, you can prevent
     # re-downloading that file by commenting out the
@@ -291,3 +311,5 @@ if __name__ == '__main__':
     get_latest_start_date(coop_stations)
 
     check_lat_lon(basins_stations, coop_stations)
+
+    get_basins_not_in_coop(basins_stations, coop_stations)
