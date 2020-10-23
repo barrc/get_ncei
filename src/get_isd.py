@@ -138,6 +138,22 @@ def read_raw(station_id):
 
 if __name__ == '__main__':
     # thing = common.Station('72219013874')
-    # quick_check('72219013874')
-    # get_data('99999904236')
-    read_raw('72219013874')
+
+    # id_ = '72785024157'
+    id_ = '72278023183'
+    # quick_check(id_)
+    read_raw(id_)
+
+    # quick_check('72785024157')
+    # read_raw(id_)
+
+    # check basins
+    from get_one_coop import read_precip
+    basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
+    basins_filename = os.path.join(basins_dir, 'AZ' + '026481' + '.dat')
+    s_date = datetime.datetime(1973, 1, 1)
+    e_date = datetime.datetime(2006, 12, 31)
+    split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
+    split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join('src', 'processed_isd_data', id_ + '.dat'))
+    from get_one_coop import plot_cumulative_by_year
+    plot_cumulative_by_year(split_basins_data, split_isd_data, s_date.year, e_date.year)
