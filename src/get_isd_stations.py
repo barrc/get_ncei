@@ -201,6 +201,7 @@ def read_debug(chpd_stations):
         #         print('2 - ')
         #         print(item)
 
+
 def read_homr_codes():
     with open('homr_codes.csv', 'r') as file:
         data = file.readlines()
@@ -223,9 +224,6 @@ if __name__ == '__main__':
     # download_file()
     # out_isd_data = read_file()
     # parse_isd_data(out_isd_data)
-
-
-
 
     import get_one_coop
     chpd_stations = get_one_coop.get_stations()
