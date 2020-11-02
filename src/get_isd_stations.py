@@ -97,24 +97,6 @@ def look_at_isd_files(cutoff_start_year, chpd_stations, basins_stations, wban_ba
         else:
             stations_first_pass.append(station)
 
-    # x = {}
-    # x['72258'] = []
-    # for item in stations_first_pass:
-    #     last_five =
-
-    #     if item.station_id[0:5] == '72258':
-    #         if item.station_id[-5:] not in x['72258']:
-    #             x['72258'].append(item.station_id[-5:])
-
-    # print(x)
-
-    # first_six = {}
-    # for item in stations_first_pass:
-    #     if item.station_id[0:6] not in first_six:
-    #         first_six[item.station_id[0:6]] = [item]
-    #     else:
-    #         first_six[item.station_id[0:6]].append(item)
-
     last_five = {}
     for item in stations_first_pass:
         if item.station_id[-5:] == '99999':
