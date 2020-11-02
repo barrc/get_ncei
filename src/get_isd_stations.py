@@ -67,7 +67,7 @@ def parse_isd_data(isd_data):
                 file.write(string_to_write)
 
 
-def look_at_isd_files(cutoff_start_year, chpd_stations, basins_stations, wban_basins_mapping):
+def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
 
     ids = []
     station_names = []
@@ -233,7 +233,7 @@ if __name__ == '__main__':
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
-    isd_stations = look_at_isd_files(common.CUTOFF_START_DATE.year, chpd_stations, basins_stations, wban_basins)
+    isd_stations = look_at_isd_files(common.CUTOFF_START_DATE.year, wban_basins)
     # print(isd_stations)
     # check_years(isd_stations)
 
