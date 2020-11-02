@@ -12,6 +12,7 @@ import common
 
 BASEDIR = os.path.join(os.getcwd(), 'src')
 
+
 def download_file():
     out_file = os.path.join(BASEDIR, 'isd-history.txt')
 
@@ -19,6 +20,7 @@ def download_file():
     print(r.status_code)
     with open(out_file, 'wb') as file:
         file.write(r.content)
+
 
 def read_file():
 
@@ -48,6 +50,7 @@ def read_file():
         isd_data.append(local_tup)
 
     return isd_data
+
 
 def parse_isd_data(isd_data):
 
@@ -163,6 +166,7 @@ def look_at_isd_files(cutoff_start_year, chpd_stations, basins_stations, wban_ba
 
     return stations_first_pass
 
+
 def check_years(coops):
     counter = 0
     for item in coops:
@@ -171,6 +175,7 @@ def check_years(coops):
 
     print(counter)
     print(len(coops))
+
 
 def read_debug(chpd_stations):
     with open(os.path.join('src', 'debug.csv'), 'r') as file:
