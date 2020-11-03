@@ -23,16 +23,22 @@ import common
 
 # "01,0000,9,5"
 
-def quick_check(isd_station):
+def quick_check(isd_station, start_date, end_date):
+    start_date_string = f"{start_date.year:04d}-{start_date.month:02d}-{start_date.day:02d}"
+    end_date_string = f"{end_date.year:04d}-{end_date.month:02d}-{end_date.day:02d}"
+
     url = 'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&' + \
-        'dataTypes=AA1&stations=' + isd_station + '&startDate=1973-01-01&endDate=2019-12-31' + \
-        '&format=json&options=includeAttributes:false'
+        'dataTypes=AA1&stations=' + isd_station + '&startDate=' + start_date_string + \
+        '&endDate=' + end_date_string + '&format=json&options=includeAttributes:false'
+
+    # # url = 'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&' + \
+    # #     'dataTypes=AA1&stations=' + isd_station + '&startDate=1970-01-01&endDate=2019-12-31' + \
+    # #     '&format=json&options=includeAttributes:false'
 
     r = requests.get(url)
     assert r.status_code == 200
 
     stuff = json.loads(r.content.decode())
-    print(json.loads(r.content.decode()))
 
     raw_filename = os.path.join('src', 'raw_isd_data', isd_station + '.json')
     with open(raw_filename, 'w') as file:
@@ -140,20 +146,29 @@ if __name__ == '__main__':
     # thing = common.Station('72219013874')
 
     # id_ = '72785024157'
-    id_ = '72278023183'
-    # quick_check(id_)
-    read_raw(id_)
-
-    # quick_check('72785024157')
+    # id_ = '69019013910' # 19431201,20091231
+    # quick_check(id_, datetime.datetime(1970, 1, 1), datetime.datetime(2009, 12, 31))
+    # id_ = '69019099999'
+    # quick_check('69019099999', datetime.datetime(2000, 1, 1), datetime.datetime(2004, 12, 30))
     # read_raw(id_)
 
-    # check basins
+    # id_ = '70197526422'
+    # quick_check(id_, datetime.datetime(2006, 1, 1), datetime.datetime(2019, 12, 31))
+    # read_raw(id_)
+
+    id_ = '72228713871'
+    quick_check(id_, datetime.datetime(1973, 1, 1), datetime.datetime(2019, 12, 31))
+    read_raw(id_)
+
+    # # check basins
     from get_one_coop import read_precip
-    basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
-    basins_filename = os.path.join(basins_dir, 'AZ' + '026481' + '.dat')
-    s_date = datetime.datetime(1973, 1, 1)
-    e_date = datetime.datetime(2006, 12, 31)
-    split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
+    # basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
+    # basins_filename = os.path.join(basins_dir, 'TX' + '412244' + '.dat')
+    s_date = datetime.datetime(1970, 1, 1)
+    e_date = datetime.datetime(2019, 12, 31)
+    # split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
     split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join('src', 'processed_isd_data', id_ + '.dat'))
-    from get_one_coop import plot_cumulative_by_year
-    plot_cumulative_by_year(split_basins_data, split_isd_data, s_date.year, e_date.year)
+    # print(basins_years)
+    print(isd_years)
+    # from get_one_coop import plot_cumulative_by_year
+    # plot_cumulative_by_year(split_basins_data, split_isd_data, s_date.year, e_date.year)
