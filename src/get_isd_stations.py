@@ -1,11 +1,11 @@
 import csv
-import collections
 import datetime
 import os
-import requests
 
 from dataclasses import asdict
 from dateutil.relativedelta import relativedelta
+
+import requests
 
 import common
 
@@ -67,10 +67,7 @@ def parse_isd_data(isd_data):
                 file.write(string_to_write)
 
 
-def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
-
-    ids = []
-    station_names = []
+def look_at_isd_files(wban_basins_mapping):
 
     stations = []
 
@@ -78,8 +75,6 @@ def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
     with open(csv_filename, 'r') as csv_file:
         station_inv_reader = csv.reader(csv_file)
         for row in station_inv_reader:
-            ids.append(row[0]+row[1])
-            station_names.append(row[2])
             if row[4] != '  ': # state
                 stations.append(common.Station(row[0] + row[1], row[2],
                                 row[4], common.make_date(row[-2]),
@@ -104,21 +99,11 @@ def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
         else:
             stations_first_pass.append(station)
 
-    last_five = {}
-    for item in stations_first_pass:
-        if item.station_id[-5:] == '99999':
-            pass
-        elif item.station_id[-5:] not in last_five:
-            last_five[item.station_id[-5:]] = [item]
-        else:
-            last_five[item.station_id[-5:]].append(item)
-
     counter = 0
     those = 0
     stations = []
-    for count, item in enumerate(stations_first_pass):
+    for item in stations_first_pass:
         if item.station_id[-5:] in wban_basins_mapping:
-            print(count, item)
             for x in basins_stations:
                 if x.station_id == wban_basins_mapping[item.station_id[-5:]]:
                     # 1. If a station is in BASINS and is current, use the station
@@ -132,7 +117,6 @@ def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
                         # example -- 70267526484, BASINS ID 507097
                         item.in_basins = True
                         stations.append(item)
-                        print(item.start_date, x.end_date)
                     # 3. If a stations is in BASINS and there is a gap between the BASINS
                     #    end date and the C-HPD v2 start date, only use the station if there
                     #    are at least 10 years of data from C-HPD v2
@@ -140,12 +124,8 @@ def look_at_isd_files(cutoff_start_year, wban_basins_mapping):
                         if item.end_date >= x.end_date:
                             item.in_basins = True
                             item.break_with_basins = True
-                            print('oh no')
                             if relativedelta(item.end_date, item.start_date).years >= 10:
                                 stations.append(item)
-                    print('BASINS-')
-                    print(x)
-                    print('\n')
 
             those += 1
         else:
@@ -173,34 +153,6 @@ def check_years(coops):
     for item in coops:
         if item.end_date.year >= 2020:
             counter += 1
-
-    print(counter)
-    print(len(coops))
-
-
-def read_debug(chpd_stations):
-    with open(os.path.join('src', 'debug.csv'), 'r') as file:
-        data = file.readlines()
-
-    split_data = [item.strip('\n').split(',') for item in data]
-
-    item_last = [item[-1] for item in split_data]
-    print(collections.Counter(item_last))
-
-    chpd_ids = [item.station_id[-6:] for item in chpd_stations]
-    for item in split_data:
-
-        if item[-1] == ' same':
-            # print(item[0])
-            if item[0][5] != '0':
-                print(item)
-        if item[-1] == ' different':
-            if item[1] in chpd_ids:
-                print('1 - ')
-                print(item)
-            if item[2] in chpd_ids:
-                print('2 - ')
-                print(item)
 
 
 def read_homr_codes():
@@ -233,8 +185,7 @@ if __name__ == '__main__':
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
-    isd_stations = look_at_isd_files(common.CUTOFF_START_DATE.year, wban_basins)
+    isd_stations = look_at_isd_files(wban_basins)
     # print(isd_stations)
     # check_years(isd_stations)
 
-    read_debug(chpd_stations)
