@@ -96,6 +96,9 @@ def look_at_isd_files(wban_basins_mapping):
         # All stations with less than one year of data can be eliminated
         elif (station.end_date - station.start_date).days < 365:
             pass
+        # Eliminate stations without lat/lon
+        elif station.latitude == '       ' or station.longitude == '       ':
+            pass
         else:
             stations_first_pass.append(station)
 
