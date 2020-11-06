@@ -3,7 +3,7 @@
 .vscode/
 
 # GIS
-*.shp
+*.shp*
 *.sbx
 *.shx
 *.xbn
@@ -11,4 +11,7 @@
 *.cpg
 *.mpk
 *.mxd
+*.prj
+*.sbn
 
+*.pdf
