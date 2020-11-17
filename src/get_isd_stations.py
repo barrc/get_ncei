@@ -173,6 +173,24 @@ def read_homr_codes():
     return stuff
 
 
+def read_isd_inventory(station):
+    with open(os.path.join('src', 'isd-inventory.csv'), 'r') as file:
+        data = file.readlines()
+
+    split_data = [item.strip('\n').split(',') for item in data]
+    header = split_data.pop(0)
+    print(header)
+    print(split_data[0])
+
+    local_usaf = station.station_id[0:6]
+    local_wban = station.station_id[6:]
+    print(local_usaf, local_wban)
+    for x in split_data:
+        if x[0] == local_usaf and x[1] == local_wban:
+            available = [int(a) for a in x[3:]]
+            if any(z > 24*30 for z in available):
+                print(available)
+
 if __name__ == '__main__':
 
     wban_basins = read_homr_codes()
@@ -191,4 +209,13 @@ if __name__ == '__main__':
     isd_stations = look_at_isd_files(wban_basins)
     # print(isd_stations)
     # check_years(isd_stations)
+
+    # test = '72436313803'
+    # test = '72219013874'
+    test = '99816999999'
+    for item in isd_stations:
+        if item.station_id == test:
+            a_station = item
+
+    read_isd_inventory(a_station)
 
