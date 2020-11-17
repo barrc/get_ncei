@@ -11,34 +11,6 @@ RAW_DATA_DIR = os.path.join(os.getcwd(), 'src', 'raw_coop_data')
 PROCESSED_DATA_DIR = os.path.join(os.getcwd(), 'src', 'processed_coop_data')
 
 
-def str_date_to_datetime(str_date):
-    x = str_date.split(' ')[0].split('-')
-    return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
-
-
-def get_stations():
-    stations = []
-
-    with open(os.path.join('src', 'coop_stations_to_use.csv'), 'r') as file:
-        coop_reader = csv.reader(file)
-        header = next(coop_reader)
-        for row in coop_reader:
-            if row[6] == 'True':
-                in_basins = True
-            else:
-                in_basins = False
-            if row[7] == 'True':
-                break_with_basins = True
-            else:
-                break_with_basins = False
-            stations.append(common.Station(row[0], row[1], row[2],
-                            str_date_to_datetime(row[3]),
-                            str_date_to_datetime(row[4]), row[5], row[6],
-                            in_basins, break_with_basins))
-
-    return stations
-
-
 def get_data(coop_stations):
     base_url = common.CHPD_BASE_URL + 'access/'
 
@@ -258,7 +230,7 @@ def plot_cumulative_by_year(data_1, data_2, start_year, end_year):
 
 
 if __name__ == '__main__':
-    coop_stations_to_use = get_stations()
+    coop_stations_to_use = common.get_stations('coop')
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
     # print(basins_stations)

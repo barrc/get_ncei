@@ -1,3 +1,4 @@
+import csv
 import datetime
 import os
 from dataclasses import dataclass
@@ -85,5 +86,33 @@ def make_basins_stations(data):
                         make_basins_date(item[9]),
                         item[4], item[5], True, True)
                 for item in data]
+
+    return stations
+
+
+def str_date_to_datetime(str_date):
+    x = str_date.split(' ')[0].split('-')
+    return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
+
+
+def get_stations(network):
+    stations = []
+
+    with open(os.path.join('src', network + '_stations_to_use.csv'), 'r') as file:
+        coop_reader = csv.reader(file)
+        header = next(coop_reader)
+        for row in coop_reader:
+            if row[6] == 'True':
+                in_basins = True
+            else:
+                in_basins = False
+            if row[7] == 'True':
+                break_with_basins = True
+            else:
+                break_with_basins = False
+            stations.append(Station(row[0], row[1], row[2],
+                            str_date_to_datetime(row[3]),
+                            str_date_to_datetime(row[4]), row[5], row[6],
+                            in_basins, break_with_basins))
 
     return stations
