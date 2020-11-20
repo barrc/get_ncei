@@ -102,11 +102,11 @@ def get_stations(network):
         coop_reader = csv.reader(file)
         header = next(coop_reader)
         for row in coop_reader:
-            if row[6] == 'True':
+            if row[7] == 'True':
                 in_basins = True
             else:
                 in_basins = False
-            if row[7] == 'True':
+            if row[8] == 'True':
                 break_with_basins = True
             else:
                 break_with_basins = False
