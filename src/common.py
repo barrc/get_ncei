@@ -14,6 +14,7 @@ CURRENT_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 CUTOFF_START_DATE = datetime.datetime(CURRENT_END_YEAR - 10 + 1, 1, 1)
 CUTOFF_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 
+DATA_BASE_DIR = os.path.join('L:\\', 'Public', 'cbarr02')
 
 @dataclass
 class Station:
@@ -26,6 +27,7 @@ class Station:
     longitude: str
     in_basins: bool
     break_with_basins: bool
+    network: str
 
     def get_start_date_to_use(self, basins):
         if self.in_basins:
@@ -37,7 +39,7 @@ class Station:
             if self.start_date <= EARLIEST_START_DATE:
                 return EARLIEST_START_DATE
             else:
-                pass
+                return self.start_date
 
     def get_end_date_to_use(self, basins):
         # TODO does it matter if in basins?
@@ -84,7 +86,7 @@ def make_basins_stations(data):
     stations = [Station(item[0], item[-1], item[2][0:2].upper(),
                         make_basins_date(item[8]),
                         make_basins_date(item[9]),
-                        item[4], item[5], True, True)
+                        item[4], item[5], True, True, 'basins')
                 for item in data]
 
     return stations
@@ -113,6 +115,6 @@ def get_stations(network):
             stations.append(Station(row[0], row[1], row[2],
                             str_date_to_datetime(row[3]),
                             str_date_to_datetime(row[4]), row[5], row[6],
-                            in_basins, break_with_basins))
+                            in_basins, break_with_basins, row[9]))
 
     return stations

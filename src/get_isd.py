@@ -43,7 +43,7 @@ def quick_check(isd_station, start_date, end_date):
     except json.decoder.JSONDecodeError:
         stuff = json.loads(r.content.decode() + ']')
 
-    raw_filename = os.path.join('src', 'raw_isd_data', isd_station + '.json')
+    raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '.json')
     with open(raw_filename, 'w') as file:
         json.dump(stuff, file)
 
@@ -64,14 +64,14 @@ def quick_check(isd_station, start_date, end_date):
 #         file.write(r.content)
 
 def read_raw(station_id):
-    with open(os.path.join('src', 'raw_isd_data', station_id + '.json'), 'r') as file:
+    with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
         data = json.load(file)
 
     report_types = [x['REPORT_TYPE'] for x in data]
 
     precips = {}
     precip_total = 0
-    with open(os.path.join('src', 'processed_isd_data', station_id + '.dat'), 'w') as file:
+    with open(os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '.dat'), 'w') as file:
         for item in data:
             try:
                 item['AA1']
@@ -146,9 +146,12 @@ def read_raw(station_id):
 
 if __name__ == '__main__':
     # thing = common.Station('72219013874')
+    isd_stations_to_use = common.get_stations('isd')
 
 
-    ids = ['99826799999','72543094822','72306899999','72320093801','99999923271','72637914845','72036799999','72475499999','72449013993','72531499999','72694024232','99817399999','99821199999','72572024127','72263023034','72253612911','72290023188','99999923272','72494523293','78535011630','72396593209','74505823277','72365623049','72495723213','72207003822','72513014777','99999994290','74793012843','99999992827','99999953152','72642504841','72267399999','72248013957','72281353146','72557014943','72651014944','72535014848','72312003870','72785024157','72439093822','74491514775','72440013995','72429563888','99999914761','72410599999','72492023237','74790013849','72519014771','72214093805','72211012842','99999903868','72341813977','72201292817','72536094830','72456013996','72409514792','72274023160','72356599999','72228693806','72681604110','72244813972','91182022521','72519794794','74781099999','99801199999','72255012912','72407513735','99999913762','72389699999','72256013959','72784624160','72217513860','99999913730','72548094910','72622794790','72646314897','72782594239','72427514894','72450003928','72351013966','72514014778','99800699999','72405399999','72319393807']
+
+
+    # ids = ['99826799999','72543094822','72306899999','72320093801','99999923271','72637914845','72036799999','72475499999','72449013993','72531499999','72694024232','99817399999','99821199999','72572024127','72263023034','72253612911','72290023188','99999923272','72494523293','78535011630','72396593209','74505823277','72365623049','72495723213','72207003822','72513014777','99999994290','74793012843','99999992827','99999953152','72642504841','72267399999','72248013957','72281353146','72557014943','72651014944','72535014848','72312003870','72785024157','72439093822','74491514775','72440013995','72429563888','99999914761','72410599999','72492023237','74790013849','72519014771','72214093805','72211012842','99999903868','72341813977','72201292817','72536094830','72456013996','72409514792','72274023160','72356599999','72228693806','72681604110','72244813972','91182022521','72519794794','74781099999','99801199999','72255012912','72407513735','99999913762','72389699999','72256013959','72784624160','72217513860','99999913730','72548094910','72622794790','72646314897','72782594239','72427514894','72450003928','72351013966','72514014778','99800699999','72405399999','72319393807']
 
     # id_ = '72785024157'
     # id_ = '69019013910' # 19431201,20091231
@@ -160,18 +163,31 @@ if __name__ == '__main__':
     # id_ = '70197526422'
     # quick_check(id_, datetime.datetime(2006, 1, 1), datetime.datetime(2019, 12, 31))
     # read_raw(id_)
+    split_basins_data = common.read_basins_file()
+    basins_stations = common.make_basins_stations(split_basins_data)
 
-
-    # id_ = '72406093721'
     from get_one_coop import read_precip
-    s_date = datetime.datetime(1970, 1, 1)
-    e_date = datetime.datetime(2019, 12, 31)
-    for id_ in ids:
-        print(id_)
-        quick_check(id_, datetime.datetime(1970, 1, 1), datetime.datetime(2019, 12, 31))
-        read_raw(id_)
-        split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join('src', 'processed_isd_data', id_ + '.dat'))
-        print(isd_years)
+    for item in isd_stations_to_use:
+        if item.station_id == '70063727406':
+            print(item.station_id)
+            s_date = item.get_start_date_to_use(basins_stations)
+            e_date = item.get_end_date_to_use(basins_stations)
+            quick_check(item.station_id, s_date, e_date)
+            read_raw(item.station_id)
+            split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', item.station_id + '.dat'))
+            print(isd_years)
+            if all(x==0 for x in isd_years.values()):
+                with open('all_zero.csv', 'a') as file:
+                    file.write(item.station_id)
+                    file.write('\n')
+            else:
+                with open('data_exists.csv', 'a') as file:
+                    file.write(item.station_id)
+                    file.write(',')
+                    file.write(json.dumps(isd_years))
+                    file.write('\n')
+
+
 
 
     # # check basins
