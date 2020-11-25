@@ -48,21 +48,6 @@ def quick_check(isd_station, start_date, end_date):
         json.dump(stuff, file)
 
 
-# def get_data(coop_stations):
-#     base_url = common.CHPD_BASE_URL + 'access/'
-
-#     # for station in coop_stations:
-#     station = coop_stations
-#     the_url = base_url + station.station_id + '.csv'
-
-#     r = requests.get(the_url)
-#     print(r.content)
-#     print(r.status_code)
-
-#     out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
-#     with open(out_file, 'wb') as file:
-#         file.write(r.content)
-
 def read_raw(station_id):
     with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
         data = json.load(file)
