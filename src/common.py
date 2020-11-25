@@ -53,9 +53,11 @@ class Station:
         if self.end_date >= CUTOFF_END_DATE:
             return CUTOFF_END_DATE
         else:
-            # TODO confirm this is what they want
             # use last complete year
-            return datetime.datetime(self.end_date.year - 1, 12, 31)
+            if self.end_date.day == 31 and self.end_date.month == 12:
+                return self.end_date
+            else:
+                return datetime.datetime(self.end_date.year - 1, 12, 31)
 
 
 def make_date(input_date):

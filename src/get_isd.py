@@ -5,10 +5,7 @@ import requests
 import statistics
 
 import common
-
-# https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&dataTypes="TMP,AA1"&stations=72219013874&startDate=2019-01-01&endDate=2019-12-31
-
-# https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&dataTypes=AA1&stations=72219013874&startDate=2019-01-01&endDate=2019-12-31&format=json&options=includeAttributes:false"
+import get_isd_stations
 
 
 #FLD LEN: 3
@@ -40,15 +37,14 @@ def quick_check(isd_station, start_date, end_date):
         stuff = json.loads(r.content.decode() + ']')
 
     raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '.json')
+    out_json = json.dumps(stuff)
     with open(raw_filename, 'w') as file:
-        json.dump(stuff, file)
+        file.write(out_json)
 
 
 def read_raw(station_id):
     with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
         data = json.load(file)
-
-    report_types = [x['REPORT_TYPE'] for x in data]
 
     precips = {}
     precip_total = 0
@@ -67,7 +63,9 @@ def read_raw(station_id):
 
                     rounded_date = actual_date.replace(minute=0)
 
-                    if split_aa1[-1] == '5':
+                    # TODO handle missing data
+
+                    if split_aa1[-1] == '5': # TODO add comment
                         precip_ = int(split_aa1[1])
                         if precip_ == 0:
                             pass
@@ -79,7 +77,7 @@ def read_raw(station_id):
                             to_file += str(rounded_date.day) + '\t'
                             to_file += str(rounded_date.hour) + '\t'
                             to_file += '0\t'
-                            to_file += str(round(precip, 2)) + '\n'
+                            to_file += str(round(precip, 3)) + '\n'
                             file.write(to_file)
                             precip_total += precip
 
@@ -93,9 +91,7 @@ if __name__ == '__main__':
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
-    # TODO move read_precip to common
-    from get_isd_stations import read_homr_codes
-    wban_basins = read_homr_codes()
+    wban_basins = get_isd_stations.read_homr_codes()
     for item in isd_stations_to_use:
         print(item.station_id)
         s_date = item.get_start_date_to_use(basins_stations, wban_basins)
@@ -115,16 +111,3 @@ if __name__ == '__main__':
                 file.write(json.dumps(isd_years))
                 file.write('\n')
 
-
-
-
-    # # check basins
-
-    # # basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
-    # # basins_filename = os.path.join(basins_dir, 'TX' + '412244' + '.dat')
-
-    # # split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
-    # # print(basins_years)
-
-    # # from get_one_coop import plot_cumulative_by_year
-    # # plot_cumulative_by_year(split_basins_data, split_isd_data, s_date.year, e_date.year)
