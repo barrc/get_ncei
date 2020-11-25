@@ -83,63 +83,13 @@ def read_raw(station_id):
                             file.write(to_file)
                             precip_total += precip
 
-                    if rounded_date not in precips:
-                        if split_aa1[-1] == '5':
-                            precips[rounded_date] = [int(split_aa1[1])/254.0]
-                    else:
-                        # print(rounded_date)
-                        if split_aa1[-1] == '5':
-                            precips[rounded_date].append(int(split_aa1[1])/254.0)
-                        # print(precips[rounded_date])
-
             except KeyError:
                 pass
 
-    #     new_precips = {}
-    #     for item in precips:
-    #         if len(precips[item]) != 1:
-    #             print(item)
-    #         new_precips[item] = statistics.mean(precips[item])
-
-    # precip_sum = 0
-    # for item in new_precips:
-    #     precip_sum += new_precips[item]
-
-    # print(precip_total)
-
-
-        #
-        # the_date = item['DATE'].split('-')
-        # if the_date[0] == '2019' and the_date[1] == '12' and the_date[2][0:2] == '30':
-        #     print(item)
-
-    # FM-12 | SYNOP report of surface observation from a fixed land station
-    # FM-15 | METAR aviation routine weather report
-    # FM-16 | SPECI aviation selected special weather report
-    # SY-MT | Synoptic and METAR merged report
-    # SOM   | Summary of month report from U.S. ASOS or AWOS station
-    # SOD   | Summary of day report from U.S. ASOS or AWOS station
-
 
 if __name__ == '__main__':
-    # thing = common.Station('72219013874')
     isd_stations_to_use = common.get_stations('isd')
 
-
-
-
-    # ids = ['99826799999','72543094822','72306899999','72320093801','99999923271','72637914845','72036799999','72475499999','72449013993','72531499999','72694024232','99817399999','99821199999','72572024127','72263023034','72253612911','72290023188','99999923272','72494523293','78535011630','72396593209','74505823277','72365623049','72495723213','72207003822','72513014777','99999994290','74793012843','99999992827','99999953152','72642504841','72267399999','72248013957','72281353146','72557014943','72651014944','72535014848','72312003870','72785024157','72439093822','74491514775','72440013995','72429563888','99999914761','72410599999','72492023237','74790013849','72519014771','72214093805','72211012842','99999903868','72341813977','72201292817','72536094830','72456013996','72409514792','72274023160','72356599999','72228693806','72681604110','72244813972','91182022521','72519794794','74781099999','99801199999','72255012912','72407513735','99999913762','72389699999','72256013959','72784624160','72217513860','99999913730','72548094910','72622794790','72646314897','72782594239','72427514894','72450003928','72351013966','72514014778','99800699999','72405399999','72319393807']
-
-    # id_ = '72785024157'
-    # id_ = '69019013910' # 19431201,20091231
-    # quick_check(id_, datetime.datetime(1970, 1, 1), datetime.datetime(2009, 12, 31))
-    # id_ = '69019099999'
-    # quick_check('69019099999', datetime.datetime(2000, 1, 1), datetime.datetime(2004, 12, 30))
-    # read_raw(id_)
-
-    # id_ = '70197526422'
-    # quick_check(id_, datetime.datetime(2006, 1, 1), datetime.datetime(2019, 12, 31))
-    # read_raw(id_)
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
