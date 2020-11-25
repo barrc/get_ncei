@@ -31,10 +31,6 @@ def quick_check(isd_station, start_date, end_date):
         'dataTypes=AA1&stations=' + isd_station + '&startDate=' + start_date_string + \
         '&endDate=' + end_date_string + '&format=json&options=includeAttributes:false'
 
-    # # url = 'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&' + \
-    # #     'dataTypes=AA1&stations=' + isd_station + '&startDate=1970-01-01&endDate=2019-12-31' + \
-    # #     '&format=json&options=includeAttributes:false'
-
     r = requests.get(url)
     assert r.status_code == 200
 
@@ -77,18 +73,14 @@ def read_raw(station_id):
                             pass
                         else:
                             precip = precip_/254.0
-                            file.write('13874')
-                            file.write('\t')
-                            file.write(str(rounded_date.year))
-                            file.write('\t')
-                            file.write(str(rounded_date.month))
-                            file.write('\t')
-                            file.write(str(rounded_date.day))
-                            file.write('\t')
-                            file.write(str(rounded_date.hour))
-                            file.write('\t0\t')
-                            file.write(str(round(precip, 2)))
-                            file.write('\n')
+                            to_file = station_id + '\t'
+                            to_file += str(rounded_date.year) + '\t'
+                            to_file += str(rounded_date.month) + '\t'
+                            to_file += str(rounded_date.day) + '\t'
+                            to_file += str(rounded_date.hour) + '\t'
+                            to_file += '0\t'
+                            to_file += str(round(precip, 2)) + '\n'
+                            file.write(to_file)
                             precip_total += precip
 
                     if rounded_date not in precips:
