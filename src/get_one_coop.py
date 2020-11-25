@@ -153,23 +153,6 @@ def process_data(station, basins, start_date, end_date):
     print(missing)
     print(partial)
 
-def read_precip(start_date, end_date, station_file):
-
-    with open(station_file, 'r') as file:
-        data = file.readlines()
-
-    split_data = [item.split() for item in data]
-    years = dict.fromkeys(list(range(start_date.year, end_date.year + 1)), 0)
-    for item in split_data:
-        items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
-        if items_date > start_date:
-            if items_date.year in years:
-                if item[-1] == '-9999':
-                    pass
-                else:
-                    years[items_date.year] += float(item[-1])
-
-    return (split_data, years)
 
 def date_and_cumsum(data, year):
     for item in data:
@@ -258,10 +241,10 @@ if __name__ == '__main__':
             print(s_date, e_date)
             # process_data(item, basins_stations, s_date, e_date)
             coop_filename = os.path.join(PROCESSED_DATA_DIR, item.station_id[-6:] + '.dat')
-            split_coop_data, coop_years = read_precip(s_date, e_date, coop_filename)
+            split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
             basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
             basins_filename = os.path.join(basins_dir, item.state + item.station_id[-6:] + '.dat')
-            split_basins_data, basins_years = read_precip(s_date, e_date, basins_filename)
+            split_basins_data, basins_years = common.read_precip(s_date, e_date, basins_filename)
 
             print(coop_years, basins_years)
             plot_cumulative_by_year(split_basins_data, split_coop_data, s_date.year, e_date.year)

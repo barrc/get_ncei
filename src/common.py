@@ -125,3 +125,22 @@ def get_stations(network):
                             in_basins, break_with_basins, row[9]))
 
     return stations
+
+
+def read_precip(start_date, end_date, station_file):
+
+    with open(station_file, 'r') as file:
+        data = file.readlines()
+
+    split_data = [item.split() for item in data]
+    years = dict.fromkeys(list(range(start_date.year, end_date.year + 1)), 0)
+    for item in split_data:
+        items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
+        if items_date > start_date:
+            if items_date.year in years:
+                if item[-1] == '-9999':
+                    pass
+                else:
+                    years[items_date.year] += float(item[-1])
+
+    return (split_data, years)
