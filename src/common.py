@@ -29,19 +29,26 @@ class Station:
     break_with_basins: bool
     network: str
 
-    def get_start_date_to_use(self, basins):
+    def get_start_date_to_use(self, basins, homr_codes=None):
         if self.in_basins:
-            match = [x for x in basins if self.station_id[-6:] == x.station_id]
-            assert len(match) == 1
-            x = match[0]
+            if self.network == 'coop':
+                match = [x for x in basins if self.station_id[-6:] == x.station_id]
+                assert len(match) == 1
+                x = match[0]
+            elif self.network == 'isd':
+                related_id = homr_codes[self.station_id[-5:]]
+                match = [x for x in basins if related_id == x.station_id]
+                assert len(match) == 1
+                x = match[0]
             return x.end_date + datetime.timedelta(days=1)
+
         else:
             if self.start_date <= EARLIEST_START_DATE:
                 return EARLIEST_START_DATE
             else:
                 return self.start_date
 
-    def get_end_date_to_use(self, basins):
+    def get_end_date_to_use(self, basins, homr_codes=None):
         # TODO does it matter if in basins?
         if self.end_date >= CUTOFF_END_DATE:
             return CUTOFF_END_DATE
