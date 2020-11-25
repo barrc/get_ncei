@@ -166,26 +166,28 @@ if __name__ == '__main__':
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
+    # TODO move read_precip to common
     from get_one_coop import read_precip
+    from get_isd_stations import read_homr_codes
+    wban_basins = read_homr_codes()
     for item in isd_stations_to_use:
-        if item.station_id == '70063727406':
-            print(item.station_id)
-            s_date = item.get_start_date_to_use(basins_stations)
-            e_date = item.get_end_date_to_use(basins_stations)
-            quick_check(item.station_id, s_date, e_date)
-            read_raw(item.station_id)
-            split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', item.station_id + '.dat'))
-            print(isd_years)
-            if all(x==0 for x in isd_years.values()):
-                with open('all_zero.csv', 'a') as file:
-                    file.write(item.station_id)
-                    file.write('\n')
-            else:
-                with open('data_exists.csv', 'a') as file:
-                    file.write(item.station_id)
-                    file.write(',')
-                    file.write(json.dumps(isd_years))
-                    file.write('\n')
+        print(item.station_id)
+        s_date = item.get_start_date_to_use(basins_stations, wban_basins)
+        e_date = item.get_end_date_to_use(basins_stations, wban_basins)
+        quick_check(item.station_id, s_date, e_date)
+        read_raw(item.station_id)
+        split_isd_data, isd_years = read_precip(s_date, e_date, os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', item.station_id + '.dat'))
+        print(isd_years)
+        if all(x==0 for x in isd_years.values()):
+            with open('all_zero.csv', 'a') as file:
+                file.write(item.station_id)
+                file.write('\n')
+        else:
+            with open('data_exists.csv', 'a') as file:
+                file.write(item.station_id)
+                file.write(',')
+                file.write(json.dumps(isd_years))
+                file.write('\n')
 
 
 
