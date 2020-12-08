@@ -116,7 +116,8 @@ def look_at_isd_files(wban_basins_mapping):
                     # 2. If a station is in BASINS and is not current, but there is no gap
                     #    between the BASINS end date and the ISD start date,  use the
                     #    station as long as there is new data
-                    elif item.start_date <= x.end_date and item.end_date >= x.end_date:
+                    elif item.start_date <= x.end_date and item.end_date >= x.end_date  \
+                        and (item.end_date - x.end_date).days >= 365:
                         # example -- 70267526484, BASINS ID 507097
                         item.in_basins = True
                         stations.append(item)
