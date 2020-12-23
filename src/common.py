@@ -28,6 +28,8 @@ class Station:
     in_basins: bool
     break_with_basins: bool
     network: str
+    start_date_to_use: datetime.datetime
+    end_date_to_use: datetime.datetime
 
     def get_start_date_to_use(self, basins, homr_codes=None):
         if self.in_basins:
@@ -40,7 +42,10 @@ class Station:
                 match = [x for x in basins if related_id == x.station_id]
                 assert len(match) == 1
                 x = match[0]
-            return x.end_date + datetime.timedelta(days=1)
+            if self.start_date <= x.end_date:
+                return x.end_date + datetime.timedelta(days=1)
+            else:
+                return self.start_date
 
         else:
             if self.start_date <= EARLIEST_START_DATE:
@@ -52,12 +57,15 @@ class Station:
         # TODO does it matter if in basins?
         if self.end_date >= CUTOFF_END_DATE:
             return CUTOFF_END_DATE
-        else:
-            # use last complete year
+        elif self.network == 'coop':
+            # if coop, use last complete year
             if self.end_date.day == 31 and self.end_date.month == 12:
                 return self.end_date
             else:
                 return datetime.datetime(self.end_date.year - 1, 12, 31)
+        else:
+            # for ISD, use end_date, because may be adjacent to another station
+            return self.end_date
 
 
 def make_date(input_date):
@@ -95,7 +103,7 @@ def make_basins_stations(data):
     stations = [Station(item[0], item[-1], item[2][0:2].upper(),
                         make_basins_date(item[8]),
                         make_basins_date(item[9]),
-                        item[4], item[5], True, True, 'basins')
+                        item[4], item[5], True, True, 'basins', make_basins_date(item[8]), make_basins_date(item[9]))
                 for item in data]
 
     return stations
@@ -106,10 +114,15 @@ def str_date_to_datetime(str_date):
     return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
 
 
-def get_stations(network):
+def get_stations(network, subset=False):
     stations = []
+    if subset: # TODO get rid of this parameter
+        filename = os.path.join('src', 'actually_use_isd_maybe.csv')
+    else:
+        filename = os.path.join('src', network + '_stations_to_use.csv')
 
-    with open(os.path.join('src', network + '_stations_to_use.csv'), 'r') as file:
+
+    with open(filename, 'r') as file:
         coop_reader = csv.reader(file)
         header = next(coop_reader)
         for row in coop_reader:
@@ -121,10 +134,18 @@ def get_stations(network):
                 break_with_basins = True
             else:
                 break_with_basins = False
-            stations.append(Station(row[0], row[1], row[2],
+            if row[10] and row[11]:
+                stations.append(Station(row[0], row[1], row[2],
                             str_date_to_datetime(row[3]),
                             str_date_to_datetime(row[4]), row[5], row[6],
-                            in_basins, break_with_basins, row[9]))
+                            in_basins, break_with_basins, row[9],
+                            str_date_to_datetime(row[10]),
+                            str_date_to_datetime(row[11])))
+            else:
+                stations.append(Station(row[0], row[1], row[2],
+                            str_date_to_datetime(row[3]),
+                            str_date_to_datetime(row[4]), row[5], row[6],
+                            in_basins, break_with_basins, row[9], None, None))
 
     return stations
 

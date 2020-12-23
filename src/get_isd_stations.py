@@ -79,7 +79,7 @@ def look_at_isd_files(wban_basins_mapping):
                 stations.append(common.Station(row[0] + row[1], row[2],
                                 row[4], common.make_date(row[-2]),
                                 common.make_date(row[-1]), row[6], row[7],
-                                False, False, 'isd'))
+                                False, False, 'isd', None, None))
 
     stations_first_pass = []
     # For C-HPD, we can easily determine which stations are in BASINS and apply
