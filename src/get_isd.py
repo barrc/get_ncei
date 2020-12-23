@@ -1,8 +1,13 @@
+
+import csv
 import datetime
 import json
 import os
 import requests
 import statistics
+import time
+
+from dataclasses import asdict
 
 import common
 import get_isd_stations
@@ -29,7 +34,6 @@ def quick_check(isd_station, start_date, end_date):
         '&endDate=' + end_date_string + '&format=json&options=includeAttributes:false'
 
     r = requests.get(url)
-    assert r.status_code == 200
 
     try:
         stuff = json.loads(r.content.decode())
@@ -42,47 +46,105 @@ def quick_check(isd_station, start_date, end_date):
         file.write(out_json)
 
 
-def read_raw(station_id):
+def get_dates(station_id):
     with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
         data = json.load(file)
 
-    precips = {}
-    precip_total = 0
+    first_date = None
+    last_date = None
+
+    for item in data:
+        try:
+            item['AA1']
+            split_aa1 = item['AA1'].split(',')
+            if split_aa1[0] == '01':
+                the_date = item['DATE'].split('-')
+                day_hour = the_date[2].split('T')
+                hour_minute = day_hour[1].split(':')
+                actual_date = datetime.datetime(int(the_date[0]), int(the_date[1]),
+                                                int(day_hour[0]), int(hour_minute[0]),
+                                                int(hour_minute[1]))
+
+                rounded_date = actual_date.replace(minute=0)
+
+                if split_aa1[-1] == '5':
+                    if not first_date:
+                        first_date = rounded_date
+                    last_date = rounded_date
+
+        except KeyError:
+            pass
+
+    return (first_date, last_date)
+
+def get_date_dict(first_date, last_date):
+
+    delta = datetime.timedelta(hours=1)
+    date_list = [first_date]
+
+    iterate_date = first_date
+    while iterate_date < last_date:
+        iterate_date += delta
+        date_list.append(iterate_date)
+
+    return {key:'9999' for key in date_list}
+
+
+def read_raw(station_id, first_date, last_date):
+    with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
+        data = json.load(file)
+
+    date_dict = get_date_dict(first_date, last_date)
+
+    for item in data:
+        try:
+            item['AA1']
+            split_aa1 = item['AA1'].split(',')
+            if split_aa1[0] == '01':
+                the_date = item['DATE'].split('-')
+                day_hour = the_date[2].split('T')
+                hour_minute = day_hour[1].split(':')
+                actual_date = datetime.datetime(int(the_date[0]), int(the_date[1]),
+                                                int(day_hour[0]), int(hour_minute[0]),
+                                                int(hour_minute[1]))
+
+                rounded_date = actual_date.replace(minute=0)
+
+                # missing data typically are not in the JSON file at all
+                # so you can't just do it in the parsing
+                # (they say 99 is the value for missing data but I can't find any instances where that's true)
+
+                if split_aa1[-1] == '5': # TODO add comment
+                    precip_ = int(split_aa1[1])
+                    if precip_ != 0:
+                        precip = precip_/254.0
+                    else:
+                        precip = precip_ # keep 0 as int for later
+
+                    if date_dict[rounded_date] == '9999':
+                        date_dict[rounded_date] = precip
+                    else:
+                        date_dict[rounded_date] += precip
+
+        except KeyError:
+            pass
+
     with open(os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '.dat'), 'w') as file:
-        for item in data:
-            try:
-                item['AA1']
-                split_aa1 = item['AA1'].split(',')
-                if split_aa1[0] == '01':
-                    the_date = item['DATE'].split('-')
-                    day_hour = the_date[2].split('T')
-                    hour_minute = day_hour[1].split(':')
-                    actual_date = datetime.datetime(int(the_date[0]), int(the_date[1]),
-                                                    int(day_hour[0]), int(hour_minute[0]),
-                                                    int(hour_minute[1]))
 
-                    rounded_date = actual_date.replace(minute=0)
+        to_file = ''
+        for key, value in date_dict.items():
+            if value != 0:
+                if value == '9999':
+                    out_value = value
+                else:
+                    out_value = str(round(value, 2))
 
-                    # TODO handle missing data
+                to_file += station_id + '\t' + str(key.year) + '\t' + \
+                           str(key.month) + '\t' + str(key.day) + '\t' + \
+                           str(key.hour) + '\t0\t' + out_value + '\n'
+        file.write(to_file)
 
-                    if split_aa1[-1] == '5': # TODO add comment
-                        precip_ = int(split_aa1[1])
-                        if precip_ == 0:
-                            pass
-                        else:
-                            precip = precip_/254.0
-                            to_file = station_id + '\t'
-                            to_file += str(rounded_date.year) + '\t'
-                            to_file += str(rounded_date.month) + '\t'
-                            to_file += str(rounded_date.day) + '\t'
-                            to_file += str(rounded_date.hour) + '\t'
-                            to_file += '0\t'
-                            to_file += str(round(precip, 3)) + '\n'
-                            file.write(to_file)
-                            precip_total += precip
-
-            except KeyError:
-                pass
+    return
 
 
 if __name__ == '__main__':
@@ -93,26 +155,25 @@ if __name__ == '__main__':
 
     wban_basins = get_isd_stations.read_homr_codes()
     for item in isd_stations_to_use:
-        if os.path.exists(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', item.station_id + '.json')):
-            pass
-        elif item.station_id == '72582794190':
-            pass # TODO handle this station
-        else:
+        # if os.path.exists(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', item.station_id + '.json')):
+        #     pass
+        # else:
+        # if item.station_id == '91285021504':
             print(item.station_id)
             s_date = item.get_start_date_to_use(basins_stations, wban_basins)
             e_date = item.get_end_date_to_use(basins_stations, wban_basins)
-            quick_check(item.station_id, s_date, e_date)
-            read_raw(item.station_id)
+            # quick_check(item.station_id, s_date, e_date)
+            real_start_date, real_end_date = get_dates(item.station_id)
+            read_raw(item.station_id, real_start_date, real_end_date)
             split_isd_data, isd_years = common.read_precip(s_date, e_date, os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', item.station_id + '.dat'))
-            print(isd_years)
-            if all(x==0 for x in isd_years.values()):
-                with open('all_zero.csv', 'a') as file:
-                    file.write(item.station_id)
-                    file.write('\n')
-            else:
-                with open('data_exists.csv', 'a') as file:
-                    file.write(item.station_id)
-                    file.write(',')
-                    file.write(json.dumps(isd_years))
-                    file.write('\n')
+
+
+        # if all(x==0 for x in isd_years.values()):
+        #     with open('all_zero.csv', 'a') as file:
+        #         file.write(item.station_id)
+        #         file.write('\n')
+        # else:
+        #     actually_use.append(item)
+
+
 
