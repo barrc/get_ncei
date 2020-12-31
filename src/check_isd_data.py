@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 from dataclasses import asdict
 
 import common
+import get_isd_stations # TODO move to common?
 
 
 def check_all_zero():
@@ -110,6 +111,39 @@ def get_stations_with_matches(station_subset):
 
     return matches
 
+def make_real_end_dates_file(all_isd_stations):
+    # make file with real start/end dates -- RUN OVERNIGHT
+    stations = []
+    for item in all_isd_stations:
+        if item in isd_stations_with_some_data:
+            real_start_date, real_end_date = get_dates(item.station_id)
+            item.start_date_to_use = real_start_date
+            item.end_date_to_use = real_end_date
+            stations.append(item)
+
+    filename = os.path.join('src', 'isd_stations_to_use_with_real_dates.csv')
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(asdict(stations[0]).keys())
+        for item in stations:
+            writer.writerow(asdict(item).values())
+
+
+def round_start_date(x):
+    if x.start_date_to_use.month == 1:
+        x.start_date_to_use = datetime.datetime(x.start_date_to_use.year, 1, 1)
+    else:
+        x.start_date_to_use = datetime.datetime(x.start_date_to_use.year + 1, 1, 1)
+
+    return x
+
+def round_end_date(x):
+    if x.end_date_to_use.month == 12:
+        x.end_date_to_use = datetime.datetime(x.end_date_to_use.year, 12, 31)
+    else:
+        x.end_date_to_use = datetime.datetime(x.end_date_to_use.year - 1, 12, 31)
+
+    return x
 
 if __name__ == '__main__':
     all_isd_stations = common.get_stations('isd')
@@ -117,87 +151,76 @@ if __name__ == '__main__':
 
     isd_stations_with_some_data = [x for x in all_isd_stations if x.station_id not in all_zero]
 
-    # make file with real start/end dates -- RUN OVERNIGHT
-    # stations = []
-    # counter = 0
-    # for item in all_isd_stations:
-    #     if counter > 10:
-    #         break
-    #     if item in isd_stations_with_some_data:
-    #         real_start_date, real_end_date = get_dates(item.station_id)
-    #         item.start_date_to_use = real_start_date
-    #         item.end_date_to_use = real_end_date
-    #         stations.append(item)
-    #         counter += 1
+    split_basins_data = common.read_basins_file()
+    basins_stations = common.make_basins_stations(split_basins_data)
+    wban_basins = get_isd_stations.read_homr_codes()
 
-    # filename = os.path.join('src', 'isd_stations_to_use_with_real_dates.csv')
-    # with open(filename, 'w', newline='') as file:
-    #     writer = csv.writer(file)
-    #     writer.writerow(asdict(stations[0]).keys())
-    #     for item in stations:
-    #         writer.writerow(asdict(item).values())
+    # if you need to make the real_end_dates file, call this function
+    # make_real_end_dates_file(all_isd_stations)
 
     isd_stations_to_use = common.get_stations('isd', '_with_real_dates')
-    print(isd_stations_to_use)
 
     prefix_full_ids = get_stations_with_matches(isd_stations_with_some_data)
 
-    # station_ids_that_match = []
-    # for item in prefix_full_ids:
-    #     ids = list(item.values())[0]
-    #     station_ids_that_match.append(ids[0])
-    #     station_ids_that_match.append(ids[1])
+    station_ids_that_match = []
+    for item in prefix_full_ids:
+        ids = list(item.values())[0]
+        station_ids_that_match.append(ids[0])
+        station_ids_that_match.append(ids[1])
+
+    final_stations = []
+    for item in isd_stations_to_use:
+        if item.station_id not in station_ids_that_match:
+            if not item.in_basins:
+                item = round_start_date(item)
+                item = round_end_date(item)
+
+                if relativedelta(item.end_date_to_use, item.start_date_to_use).years >= 10:
+                    final_stations.append(item)
+            else:
+                item = round_start_date(item)
+                item = round_end_date(item)
+
+                if item.end_date_to_use <= item.start_date_to_use:
+                    pass
+
+                else:
+                    for x in basins_stations:
+                        if x.station_id == wban_basins[item.station_id[-5:]]:
+                            if (item.start_date_to_use - x.end_date_to_use).days == 1:
+                                final_stations.append(item)
+                            else:
+                                item.break_with_basins = True
+                                if relativedelta(item.end_date_to_use, item.start_date_to_use).years < 10:
+                                    pass
+                                else:
+                                    print(item)
+                                    final_stations.append(item)
+
+
+    filename = os.path.join('src', 'isd_stations_to_use_final.csv')
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(asdict(final_stations[0]).keys())
+        for item in final_stations:
+            writer.writerow(asdict(item).values())
 
 
 
-    # for item in isd_stations_with_some_data:
-    #     if item.station_id not in station_ids_that_match:
-    #         if not item.in_basins:
-    #             real_start_date, real_end_date = get_dates(item.station_id)
-    #             # print(real_start_date, real_end_date)
-    #             item.start_date_to_use = real_start_date
-    #             item.end_date_to_use = real_end_date
-    #             if relativedelta(real_end_date, real_start_date).years >= 10:
-    #                 print(real_start_date, real_end_date, item.station_id)
 
-
-            # if item.in_basins:
-            #     real_start_date, real_end_date = get_dates(item.station_id)
-            #     # print(real_start_date, real_end_date)
-            #     if relativedelta(real_end_date, real_start_date).years >= 10:
-            #         if real_start_date.month == 1:
-            #             item.start_date_to_use = datetime.datetime(real_start_date.year, 1, 1)
-            #         else:
-            #             item.start_date_to_use = datetime.datetime(real_start_date.year + 1, 1, 1)
-            #         if real_end_date.month == 12:
-            #             item.end_date_to_use = datetime.datetime(real_end_date.year, 12, 31)
-            #         else:
-            #             item.end_date_to_use = datetime.datetime(real_end_date.year - 1, 12, 31)
-
-            #     else:
-            #         # print(relativedelta(item.end_date, item.start_date).years)
-            #         print(real_start_date, real_end_date)
-            #         print(item)
-            #         print('\n')
-            #     # break
-
-
-
-    counter = 0
-    other_counter = 0
-    for x in prefix_full_ids:
-        stuff = [station for station in isd_stations_with_some_data if station.station_id in list(x.values())[0]]
-        start_date, end_date = get_dates(stuff[0].station_id)
-        other_start_date, other_end_date = get_dates(stuff[1].station_id)
+    # for x in prefix_full_ids:
+    #     stuff = [station for station in isd_stations_with_some_data if station.station_id in list(x.values())[0]]
+    #     start_date, end_date = get_dates(stuff[0].station_id)
+    #     other_start_date, other_end_date = get_dates(stuff[1].station_id)
 
         # if start_date < other_start_date:
         #     if end_date > other_end_date:
         #         print('debug')
         # if other_end_date -
 
-        if end_date < other_end_date:
-            if start_date > other_start_date:
-                print('other_debug')
+        # if end_date < other_end_date:
+        #     if start_date > other_start_date:
+        #         print('other_debug')
 
 
         # if other_start_date == other_end_date:
@@ -214,8 +237,8 @@ if __name__ == '__main__':
         #         print('\n')
         #         other_counter += 1
 
-    print(f'counter: {counter}')
-    print(f'other_counter: {other_counter}')
+    # print(f'counter: {counter}')
+    # print(f'other_counter: {other_counter}')
 
 
         # break
