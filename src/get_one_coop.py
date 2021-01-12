@@ -7,22 +7,15 @@ import matplotlib.pyplot as plt
 
 import common
 
-RAW_DATA_DIR = os.path.join(os.getcwd(), 'src', 'raw_coop_data')
-PROCESSED_DATA_DIR = os.path.join(os.getcwd(), 'src', 'processed_coop_data')
 
-
-def get_data(coop_stations):
+def get_data(station):
     base_url = common.CHPD_BASE_URL + 'access/'
 
-    # for station in coop_stations:
-    station = coop_stations
     the_url = base_url + station.station_id + '.csv'
 
     r = requests.get(the_url)
-    print(r.content)
-    print(r.status_code)
 
-    out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
+    out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
     with open(out_file, 'wb') as file:
         file.write(r.content)
 
@@ -78,7 +71,7 @@ def check_last_records(val):
 
 
 def process_data(station, basins, start_date, end_date):
-    out_file = os.path.join(RAW_DATA_DIR, station.station_id + '.csv')
+    out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
     with open(out_file, 'rb') as file:
         data = file.readlines()
 
@@ -111,7 +104,7 @@ def process_data(station, basins, start_date, end_date):
                     for new_day in new_days:
                         counter = 0
                         for value in float_precip:
-                            to_file += get_line(value, counter, new_day, station.station_id[-6:])
+                            to_file += get_line(value, counter, new_day, station.station_id)
                             counter += 1
 
             the_value = item.decode().strip('\n').split(',')
@@ -140,12 +133,12 @@ def process_data(station, basins, start_date, end_date):
 
             counter = 0
             for value in float_precip:
-                to_file += get_line(value, counter, actual_date, station.station_id[-6:])
+                to_file += get_line(value, counter, actual_date, station.station_id)
                 counter += 1
 
         previous_date = actual_date
 
-    out_file = os.path.join(PROCESSED_DATA_DIR, station.station_id[-6:] + '.dat')
+    out_file = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', station.station_id + '.dat')
     with open(out_file, 'w') as file:
         file.write(to_file)
 
@@ -216,7 +209,6 @@ if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop')
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
-    # print(basins_stations)
 
     # get_data(coop_stations_to_use[2]) # 2 -> ALBERTA
     # Alberta is "most" typical -- BASINS goes thru 12/31/2006 and COOP is current
@@ -231,20 +223,25 @@ if __name__ == '__main__':
     # which_station_id = 'USC00304174'  # Ithaca
 
     for item in coop_stations_to_use:
-        if item.station_id == which_station_id:
-            # get_data(item)
-            # for comparison
-            s_date = datetime.datetime(1979, 1, 1)
-            e_date = datetime.datetime(2006, 12, 31)
-            # s_date = item.get_start_date_to_use(basins_stations)
-            # e_date = item.get_end_date_to_use(basins_stations)
-            print(s_date, e_date)
-            # process_data(item, basins_stations, s_date, e_date)
-            coop_filename = os.path.join(PROCESSED_DATA_DIR, item.station_id[-6:] + '.dat')
-            split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
-            basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
-            basins_filename = os.path.join(basins_dir, item.state + item.station_id[-6:] + '.dat')
-            split_basins_data, basins_years = common.read_precip(s_date, e_date, basins_filename)
+        # if item.station_id == which_station_id:
+        print(item.station_id)
+        get_data(item)
+        s_date = item.get_start_date_to_use(basins_stations)
+        e_date = item.get_end_date_to_use(basins_stations)
+        process_data(item, basins_stations, s_date, e_date)
 
-            print(coop_years, basins_years)
-            plot_cumulative_by_year(split_basins_data, split_coop_data, s_date.year, e_date.year)
+        coop_filename = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', item.station_id + '.dat')
+        split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
+
+
+
+
+    # for comparison
+    # s_date = datetime.datetime(1979, 1, 1)
+    # e_date = datetime.datetime(2006, 12, 31)
+    # process_data(item, basins_stations, s_date, e_date)
+    # basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
+    # basins_filename = os.path.join(basins_dir, item.state + item.station_id[-6:] + '.dat')
+    # split_basins_data, basins_years = common.read_precip(s_date, e_date, basins_filename)
+    # print(coop_years, basins_years)
+    # plot_cumulative_by_year(split_basins_data, split_coop_data, s_date.year, e_date.year)
