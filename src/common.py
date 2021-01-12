@@ -114,10 +114,10 @@ def str_date_to_datetime(str_date):
     return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
 
 
-def get_stations(network, subset=False):
+def get_stations(network, subset_string=False):
     stations = []
-    if subset: # TODO get rid of this parameter
-        filename = os.path.join('src', 'actually_use_isd_maybe.csv')
+    if subset_string:
+        filename = os.path.join('src', network + '_stations_to_use' + subset_string + '.csv')
     else:
         filename = os.path.join('src', network + '_stations_to_use.csv')
 
@@ -156,14 +156,29 @@ def read_precip(start_date, end_date, station_file):
         data = file.readlines()
 
     split_data = [item.split() for item in data]
-    years = dict.fromkeys(list(range(start_date.year, end_date.year + 1)), 0)
-    for item in split_data:
-        items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
-        if items_date > start_date:
-            if items_date.year in years:
-                if item[-1] == '-9999':
-                    pass
-                else:
-                    years[items_date.year] += float(item[-1])
+    # years = dict.fromkeys(list(range(start_date.year, end_date.year + 1)), 0)
+    # for item in split_data:
+    #     items_date = datetime.datetime(int(item[1]), int(item[2]), int(item[3]))
+    #     if items_date > start_date:
+    #         if items_date.year in years:
+    #             if item[-1] == '-9999':
+    #                 pass
+    #             else:
+    #                 years[items_date.year] += float(item[-1])
+
+    years = None
 
     return (split_data, years)
+
+
+def get_date_dict(value, first_date, last_date):
+
+    delta = datetime.timedelta(hours=1)
+    date_list = [first_date]
+
+    iterate_date = first_date
+    while iterate_date < last_date:
+        iterate_date += delta
+        date_list.append(iterate_date)
+
+    return {key:value for key in date_list}
