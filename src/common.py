@@ -14,7 +14,8 @@ CURRENT_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 CUTOFF_START_DATE = datetime.datetime(CURRENT_END_YEAR - 10 + 1, 1, 1)
 CUTOFF_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 
-DATA_BASE_DIR = os.path.join('L:\\', 'Public', 'cbarr02')
+DATA_BASE_DIR = os.path.join('O:\\', 'PRIV', 'CPHEA', 'PESD',
+                             'COR', 'Public', 'cbarr02')
 
 @dataclass
 class Station:
