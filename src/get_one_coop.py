@@ -5,6 +5,8 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
+from dateutil import relativedelta as relativedelta
+
 import common
 
 
@@ -84,29 +86,14 @@ def process_data(station, basins, start_date, end_date):
     to_file = ''
     previous_date = False
 
+    date_dict = common.get_date_dict('9999', start_date, end_date)
     for item in data:
         split_item = item.split(b',')
         raw_date = split_item[4].decode().split('-')
         actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]),
                                         int(raw_date[2]))
 
-        if actual_date.year >= start_date.year:
-            if previous_date:
-                # If an entire day is missing, it's not included in the .csv
-                # Need to flag those as missing explicitly
-                days_diff = (actual_date - previous_date).days
-                if days_diff > 1:
-                    # print(previous_date, actual_date)
-                    new_days = [previous_date + datetime.timedelta(n)
-                                for n in range(1, days_diff)]
-                    float_precip = [-9999 for i in range(0, 24)]
-                    # FORNOW -- change when missing data plan determined
-                    for new_day in new_days:
-                        counter = 0
-                        for value in float_precip:
-                            to_file += get_line(value, counter, new_day, station.station_id)
-                            counter += 1
-
+        if actual_date >= start_date and actual_date <= end_date:
             the_value = item.decode().strip('\n').split(',')
             # TODO check flags
 
@@ -115,7 +102,10 @@ def process_data(station, basins, start_date, end_date):
                 for x in measurement_flag_values:
                     assert x == ' ' or x == 'Z' or x == 'g'
             except:
-                print(x)
+                if x == 'A':
+                    print(station.station_id)
+                    print(actual_date)
+                    print(measurement_flag_values)
             quality_flag_values = the_value[8:-5:5]
             primary_source_flag_values = the_value[9:-5:5]
             secondary_source_flag_values = the_value[10:-5:5]
@@ -123,28 +113,24 @@ def process_data(station, basins, start_date, end_date):
 
             check_last_records(the_value)
 
-            float_precip = [int(x) for x in precip_values]  # -9999?
+            float_precip = [int(x) for x in precip_values]
 
-            for item in float_precip:
-                if item < -1:
-                    pass
-                else:
-                    debug_year_precip += item
+            # for item in float_precip:
+            #     if item < -1:
+            #         pass
+            #     else:
+            #         debug_year_precip += item
 
             counter = 0
             for value in float_precip:
                 to_file += get_line(value, counter, actual_date, station.station_id)
                 counter += 1
-
-        previous_date = actual_date
+                actual_date = actual_date + datetime.timedelta(hours=1)
 
     out_file = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', station.station_id + '.dat')
     with open(out_file, 'w') as file:
         file.write(to_file)
 
-    print(debug_year_precip)
-    print(missing)
-    print(partial)
 
 
 def date_and_cumsum(data, year):
@@ -223,15 +209,20 @@ if __name__ == '__main__':
     # which_station_id = 'USC00304174'  # Ithaca
 
     for item in coop_stations_to_use:
-        # if item.station_id == which_station_id:
-        print(item.station_id)
-        get_data(item)
+        # if not os.path.exists(os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', item.station_id + '.csv')):
+        #     get_data(item)
+        #     print(item.station_id)
+        if item.station_id == 'USC00304174':
+            get_data(item)
         s_date = item.get_start_date_to_use(basins_stations)
         e_date = item.get_end_date_to_use(basins_stations)
+        s_date = datetime.datetime(1970, 1, 1)
+        e_date = datetime.datetime(2006, 12, 31)
         process_data(item, basins_stations, s_date, e_date)
+        # exit()
 
-        coop_filename = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', item.station_id + '.dat')
-        split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
+        # coop_filename = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', item.station_id + '.dat')
+        # split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
 
 
 
