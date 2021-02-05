@@ -67,11 +67,9 @@ def process_data(data):
 def read_data(filename):
 
     with open(filename, 'r') as file:
-        data = file.readlines()
+        precip_data = file.readlines()
 
-    split_data = [item.split() for item in data]
-
-    return split_data
+    return [item.split() for item in precip_data]
 
 
 def get_missing_dates(data_1):
@@ -90,11 +88,11 @@ def get_missing_dates(data_1):
     return missing_dates
 
 
-def adjust_dates(nldas_data, utc_offset):
+def adjust_dates(nldas, utc):
     nldas_dict = {}
-    for x in nldas_data:
-        adjusted_date = x + datetime.timedelta(hours=utc_offset)
-        nldas_dict[adjusted_date] = nldas_data[x]
+    for x in nldas:
+        adjusted_date = x + datetime.timedelta(hours=utc)
+        nldas_dict[adjusted_date] = nldas[x]
 
     return nldas_dict
 
@@ -106,17 +104,17 @@ def get_corresponding_nldas(missing_dates, nldas_data):
     # on the UTC offset
     # for EST, the first available date should be 1979/1/1 19:00
 
-    missing_dict = {}
+    missing = {}
 
     for missing_date in missing_dates:
         if missing_date >= first_nldas_date:
-            missing_dict[missing_date] = nldas_data[missing_date]
+            missing[missing_date] = nldas_data[missing_date]
 
-    return missing_dict
+    return missing
 
 
-def fill_data(missing_dict, coop_data):
-    first_nldas_date = list(missing_dict.items())[0][0]
+def fill_data(missing, coop_data):
+    first_nldas_date = list(missing.items())[0][0]
 
     filled_data = []
     for x in coop_data:
@@ -130,7 +128,7 @@ def fill_data(missing_dict, coop_data):
         if local_date >= first_nldas_date:
             if x[-1] == '-9999':
 
-                nldas_precip = missing_dict[local_date]
+                nldas_precip = missing[local_date]
                 local_thing = x[0:-1]
                 local_thing.append(nldas_precip)
                 filled_data.append(local_thing)
@@ -173,21 +171,22 @@ if __name__ == '__main__':
     #     'C:\\', 'Users', 'cbarr02', 'Desktop', 'GitHub',
     #     'testing', 'swc', 'precip_qa', 'NY304174_out.txt')
 
-    coop_data = read_data(coop_filename)
-    basins_data = read_data(basins_filename)
+    coop_precip_data = read_data(coop_filename)
+    basins_precip_data = read_data(basins_filename)
 
     x_grid, y_grid = grid_cell_from_lat_lon(
         float(station_to_use.latitude), float(station_to_use.longitude))
 
-    data = get_data('APCPsfc', '1979-01-01T24', '2007-01-01T24', x_grid, y_grid)
-    nldas_data = process_data(data)
+    raw_nldas_data = get_data(
+        'APCPsfc', '1979-01-01T24', '2007-01-01T24', x_grid, y_grid)
+    nldas_precip_data = process_data(raw_nldas_data)
 
     # data returned is in UTC
     # for COOP, adjust this by utc_offset
-    adjusted_nldas_data = adjust_dates(nldas_data, utc_offset)
+    adjusted_nldas_data = adjust_dates(nldas_precip_data, utc_offset)
 
-    missing_dates = get_missing_dates(coop_data)
+    coop_missing_dates = get_missing_dates(coop_precip_data)
 
-    missing_dict = get_corresponding_nldas(missing_dates, adjusted_nldas_data)
+    missing_dict = get_corresponding_nldas(coop_missing_dates, adjusted_nldas_data)
 
-    fill_data(missing_dict, coop_data)
+    fill_data(missing_dict, coop_precip_data)
