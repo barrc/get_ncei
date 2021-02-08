@@ -137,18 +137,20 @@ def fill_data(missing, coop_data, first_nldas_date):
 
     return filled_data
 
-def get_dict(input):
-    output = {}
-    for x in input:
+
+def get_dict(input_dict):
+    output_dict = {}
+    for x in input_dict:
         try:
             local_date = datetime.datetime(
                 int(x[1]), int(x[2]), int(x[3]), int(x[4]))
         except ValueError:
             local_date = datetime.datetime(
                 int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
-        output[local_date] = float(x[-1])
+        output_dict[local_date] = float(x[-1])
 
-    return output
+    return output_dict
+
 
 def compare(coop, missing_dates, basins, first_date, station_name):
     coop_dict = get_dict(coop)
@@ -157,11 +159,11 @@ def compare(coop, missing_dates, basins, first_date, station_name):
     coop_plot = []
     basins_plot = []
 
-    for item in missing_dates:
-        if item >= first_date:
-            coop_plot.append(coop_dict[item])
+    for missing_date in missing_dates:
+        if missing_date >= first_date:
+            coop_plot.append(coop_dict[missing_date])
             try:
-                basins_plot.append(basins_dict[item])
+                basins_plot.append(basins_dict[missing_date])
             except KeyError:
                 basins_plot.append(0)
 
@@ -188,9 +190,6 @@ def compare(coop, missing_dates, basins, first_date, station_name):
     #             print(basins_dict[x], coop_dict[x])
     #         except:
     #             print(0, coop_dict[x])
-
-
-
 
 
 if __name__ == '__main__':
@@ -245,8 +244,11 @@ if __name__ == '__main__':
 
     coop_missing_dates = get_missing_dates(coop_precip_data)
 
-    first_missing_date, missing_dict = get_corresponding_nldas(coop_missing_dates, adjusted_nldas_data)
+    first_missing_date, missing_dict = get_corresponding_nldas(
+        coop_missing_dates, adjusted_nldas_data)
 
-    filled_coop_data = fill_data(missing_dict, coop_precip_data, first_missing_date)
+    filled_coop_data = fill_data(
+        missing_dict, coop_precip_data, first_missing_date)
 
-    compare(filled_coop_data, coop_missing_dates, basins_precip_data, first_missing_date, station_to_use.station_name)
+    compare(filled_coop_data, coop_missing_dates, basins_precip_data,
+            first_missing_date, station_to_use.station_name)
