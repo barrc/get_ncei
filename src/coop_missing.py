@@ -2,6 +2,7 @@ import csv
 import datetime
 import os
 
+import matplotlib.pyplot as plt
 import requests
 
 import common
@@ -110,11 +111,10 @@ def get_corresponding_nldas(missing_dates, nldas_data):
         if missing_date >= first_nldas_date:
             missing[missing_date] = nldas_data[missing_date]
 
-    return missing
+    return first_nldas_date, missing
 
 
-def fill_data(missing, coop_data):
-    first_nldas_date = list(missing.items())[0][0]
+def fill_data(missing, coop_data, first_nldas_date):
 
     filled_data = []
     for x in coop_data:
@@ -135,7 +135,62 @@ def fill_data(missing, coop_data):
             else:
                 filled_data.append(x)
 
-    print(filled_data)
+    return filled_data
+
+def get_dict(input):
+    output = {}
+    for x in input:
+        try:
+            local_date = datetime.datetime(
+                int(x[1]), int(x[2]), int(x[3]), int(x[4]))
+        except ValueError:
+            local_date = datetime.datetime(
+                int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
+        output[local_date] = float(x[-1])
+
+    return output
+
+def compare(coop, missing_dates, basins, first_date, station_name):
+    coop_dict = get_dict(coop)
+    basins_dict = get_dict(basins)
+
+    coop_plot = []
+    basins_plot = []
+
+    for item in missing_dates:
+        if item >= first_date:
+            coop_plot.append(coop_dict[item])
+            try:
+                basins_plot.append(basins_dict[item])
+            except KeyError:
+                basins_plot.append(0)
+
+            print('\n')
+
+    plt.figure()
+    plt.scatter(basins_plot, coop_plot)
+    plt.xlabel('BASINS (in)')
+    plt.ylabel('C-HPD (in)')
+    plt.title(station_name)
+    plt.show()
+
+    # for a, b in zip(coop_plot, basins_plot):
+    #     if b > 0.3:
+    #         print(a, b)
+
+    print(sum(basins_plot))
+    print(sum(coop_plot))
+
+    # just_dates = coop_dict.keys()
+    # for x in just_dates:
+    #     if x >= first_date:
+    #         try:
+    #             print(basins_dict[x], coop_dict[x])
+    #         except:
+    #             print(0, coop_dict[x])
+
+
+
 
 
 if __name__ == '__main__':
@@ -143,7 +198,10 @@ if __name__ == '__main__':
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
-    short_id = '304174'
+    # short_id = '304174' # ithaca
+    # short_id = '359581'
+    # short_id = '415410' # lubbock
+    short_id = '101956'
     station_id_to_use = 'USC00' + short_id
 
     # TODO consider adding the UTC offset to the stations. But for now:
@@ -166,7 +224,7 @@ if __name__ == '__main__':
         station_id_to_use + '_old.dat')
     basins_filename = os.path.join(
         'C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home',
-        'data', 'NY' + short_id + '.dat')
+        'data', station_to_use.state + short_id + '.dat')
     # nldas_filename = os.path.join(
     #     'C:\\', 'Users', 'cbarr02', 'Desktop', 'GitHub',
     #     'testing', 'swc', 'precip_qa', 'NY304174_out.txt')
@@ -187,6 +245,8 @@ if __name__ == '__main__':
 
     coop_missing_dates = get_missing_dates(coop_precip_data)
 
-    missing_dict = get_corresponding_nldas(coop_missing_dates, adjusted_nldas_data)
+    first_missing_date, missing_dict = get_corresponding_nldas(coop_missing_dates, adjusted_nldas_data)
 
-    fill_data(missing_dict, coop_precip_data)
+    filled_coop_data = fill_data(missing_dict, coop_precip_data, first_missing_date)
+
+    compare(filled_coop_data, coop_missing_dates, basins_precip_data, first_missing_date, station_to_use.station_name)
