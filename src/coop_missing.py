@@ -58,10 +58,6 @@ def process_data(data):
             if len(meta_item) == 2:
                 metadata[meta_item[0]] = meta_item[1]
 
-    print(metadata)
-    # print(dates)
-    # print(values)
-    print('\n')
     return nldas_dict
 
 
@@ -167,8 +163,6 @@ def compare(coop, missing_dates, basins, first_date, station_name):
             except KeyError:
                 basins_plot.append(0)
 
-            print('\n')
-
     plt.figure()
     plt.scatter(basins_plot, coop_plot)
     plt.xlabel('BASINS (in)')
@@ -176,20 +170,8 @@ def compare(coop, missing_dates, basins, first_date, station_name):
     plt.title(station_name)
     plt.show()
 
-    # for a, b in zip(coop_plot, basins_plot):
-    #     if b > 0.3:
-    #         print(a, b)
-
     print(sum(basins_plot))
     print(sum(coop_plot))
-
-    # just_dates = coop_dict.keys()
-    # for x in just_dates:
-    #     if x >= first_date:
-    #         try:
-    #             print(basins_dict[x], coop_dict[x])
-    #         except:
-    #             print(0, coop_dict[x])
 
 
 if __name__ == '__main__':
@@ -200,7 +182,7 @@ if __name__ == '__main__':
     # short_id = '304174' # ithaca
     # short_id = '359581'
     # short_id = '415410' # lubbock
-    short_id = '101956'
+    short_id = '120830'
     station_id_to_use = 'USC00' + short_id
 
     # TODO consider adding the UTC offset to the stations. But for now:
@@ -252,3 +234,5 @@ if __name__ == '__main__':
 
     compare(filled_coop_data, coop_missing_dates, basins_precip_data,
             first_missing_date, station_to_use.station_name)
+
+
