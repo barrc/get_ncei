@@ -144,7 +144,7 @@ def assign_in_basins_attribute(basins, coops):
     return coops
 
 
-def check_years(coops):
+def get_coop_stations_to_use(coops):
     """
     Determines which C-HPD v2 stations to use
 
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     coop_stations = read_coop_file(station_inv)
 
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
-    coops_to_use = check_years(coop_stations)
+    coops_to_use = get_coop_stations_to_use(coop_stations)
 
     # TODO come up with a better way of formatting this
     check_stations_handled_properly(coops_to_use)
