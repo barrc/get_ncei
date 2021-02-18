@@ -17,7 +17,7 @@ def download_file():
     out_file = os.path.join(BASEDIR, 'isd-history.txt')
 
     r = requests.get('http://www1.ncdc.noaa.gov/pub/data/noaa/isd-history.txt')
-    print(r.status_code)
+
     with open(out_file, 'wb') as file:
         file.write(r.content)
 
@@ -114,7 +114,7 @@ def look_at_isd_files(wban_basins_mapping):
                         item.in_basins = True
                         stations.append(item)
                     # 2. If a station is in BASINS and is not current, but there is no gap
-                    #    between the BASINS end date and the ISD start date,  use the
+                    #    between the BASINS end date and the ISD start date, use the
                     #    station as long as there is new data
                     elif item.start_date <= x.end_date and item.end_date >= x.end_date  \
                         and (item.end_date - x.end_date).days >= 365:
@@ -122,8 +122,8 @@ def look_at_isd_files(wban_basins_mapping):
                         item.in_basins = True
                         stations.append(item)
                     # 3. If a stations is in BASINS and there is a gap between the BASINS
-                    #    end date and the C-HPD v2 start date, only use the station if there
-                    #    are at least 10 years of data from C-HPD v2
+                    #    end date and the ISD start date, only use the station if there
+                    #    are at least 10 years of data from ISD
                     else:
                         if item.end_date >= x.end_date:
                             item.in_basins = True
@@ -200,10 +200,8 @@ if __name__ == '__main__':
     # out_isd_data = read_file()
     # parse_isd_data(out_isd_data)
 
-    # import get_one_coop
     chpd_stations = common.get_stations('coop')
 
-    # import common
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
