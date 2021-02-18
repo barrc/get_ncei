@@ -2,7 +2,6 @@ import csv
 import os
 import requests
 from dataclasses import asdict
-from dateutil.relativedelta import relativedelta
 import datetime
 from decimal import Decimal
 
@@ -55,8 +54,8 @@ def read_coop_file(station_inv_file):
             stations.append(common.Station(row[0], row[5], row[4],
                                            common.make_date(por[0]),
                                            common.make_date(por[1]),
-                                           row[1], row[2], False, False, 'coop',
-                                           None, None))
+                                           row[1], row[2], False, False,
+                                           'coop', None, None))
 
     return stations
 
@@ -124,7 +123,6 @@ def assign_in_basins_attribute(basins, coops):
     """
 
     basins_ids = [item.station_id for item in basins]
-    counter = 0
 
     for coop in coops:
         if coop.station_id[-6:] in basins_ids:
@@ -136,7 +134,8 @@ def assign_in_basins_attribute(basins, coops):
                         coop.start_date_to_use = get_start_date_to_use(coop)
                         coop.end_date_to_use = get_end_date_to_use(coop)
                     else:
-                        coop.start_date_to_use = x.end_date + datetime.timedelta(days=1)
+                        coop.start_date_to_use = (
+                            x.end_date + datetime.timedelta(days=1))
                         coop.end_date_to_use = get_end_date_to_use(coop)
         else:
             coop.start_date_to_use = get_start_date_to_use(coop)
@@ -162,12 +161,13 @@ def get_coop_stations_to_use(coops):
     """
     data = []
 
-    required_delta = datetime.timedelta(days=3650) # approximately 10 years
+    # approximately 10 years
+    ten_years = datetime.timedelta(days=3650)
 
     for item in coops:
         if not item.in_basins:
             # Rule 1
-            if item.end_date_to_use - item.start_date_to_use >= required_delta:
+            if item.end_date_to_use - item.start_date_to_use >= ten_years:
                 data.append(item)
         else:
             if not item.break_with_basins:
@@ -176,7 +176,7 @@ def get_coop_stations_to_use(coops):
                     data.append(item)
             else:
                 # Rule 3
-                if item.end_date_to_use - item.start_date_to_use >= required_delta:
+                if item.end_date_to_use - item.start_date_to_use >= ten_years:
                     data.append(item)
 
     return data
@@ -263,7 +263,6 @@ def check_stations_handled_properly(data):
 
 
 def get_basins_not_in_coop(basins, coops):
-    basins_ids = [item.station_id for item in basins]
     coop_ids = [item.station_id[-6:] for item in coops]
     counter = 0
 
