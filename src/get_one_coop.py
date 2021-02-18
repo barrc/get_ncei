@@ -72,7 +72,7 @@ def check_last_records(val):
     assert val[-1] == 'C' or val[-1] == ' '
 
 
-def process_data(station, basins, start_date, end_date):
+def process_data(station, start_date, end_date):
     out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
     with open(out_file, 'rb') as file:
         data = file.readlines()
@@ -193,46 +193,9 @@ def plot_cumulative_by_year(data_1, data_2, start_year, end_year):
 
 if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop')
-    split_basins_data = common.read_basins_file()
-    basins_stations = common.make_basins_stations(split_basins_data)
-
-    # get_data(coop_stations_to_use[2]) # 2 -> ALBERTA
-    # Alberta is "most" typical -- BASINS goes thru 12/31/2006 and COOP is current
-
-    which_station_id = '332974'  # in BASINS and current
-    # which_station_id = '106174'  # in BASINS and not current
-    which_station_id = '358717'  # not in BASINS and current
-    which_station_id = '214546'
-    which_station_id = '018178'  # example where the lat/lon are very different from BASINS to CHPD
-    # which_station_id = '352867'
-    which_station_id = 'USC00134101'  # Iowa City
-    # which_station_id = 'USC00304174'  # Ithaca
 
     for item in coop_stations_to_use:
-        # if not os.path.exists(os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', item.station_id + '.csv')):
-        #     get_data(item)
-        #     print(item.station_id)
-        if item.station_id == 'USC00304174':
+        if not os.path.exists(os.path.join(
+                common.DATA_BASE_DIR, 'raw_coop_data', item.station_id + '.csv')):
             get_data(item)
-        s_date = item.get_start_date_to_use(basins_stations)
-        e_date = item.get_end_date_to_use(basins_stations)
-        s_date = datetime.datetime(1970, 1, 1)
-        e_date = datetime.datetime(2006, 12, 31)
-        process_data(item, basins_stations, s_date, e_date)
-        # exit()
-
-        # coop_filename = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', item.station_id + '.dat')
-        # split_coop_data, coop_years = common.read_precip(s_date, e_date, coop_filename)
-
-
-
-
-    # for comparison
-    # s_date = datetime.datetime(1979, 1, 1)
-    # e_date = datetime.datetime(2006, 12, 31)
-    # process_data(item, basins_stations, s_date, e_date)
-    # basins_dir = os.path.join('C:\\', 'Users', 'cbarr02', 'Desktop', 'swcalculator_home', 'data')
-    # basins_filename = os.path.join(basins_dir, item.state + item.station_id[-6:] + '.dat')
-    # split_basins_data, basins_years = common.read_precip(s_date, e_date, basins_filename)
-    # print(coop_years, basins_years)
-    # plot_cumulative_by_year(split_basins_data, split_coop_data, s_date.year, e_date.year)
+        process_data(item, item.start_date_to_use, item.end_date_to_use)

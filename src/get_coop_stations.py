@@ -3,6 +3,7 @@ import os
 import requests
 from dataclasses import asdict
 from dateutil.relativedelta import relativedelta
+import datetime
 from decimal import Decimal
 
 import common
@@ -90,6 +91,24 @@ def check_lat_lon(basins, coops):
     print(f'mismatched: {mismatched}')
 
 
+def get_start_date_to_use(station):
+    if station.start_date <= common.EARLIEST_START_DATE:
+        return common.EARLIEST_START_DATE
+    elif station.start_date.month == 1 and station.start_date.day == 1:
+        return station.start_date
+    else:
+        return datetime.datetime(station.start_date.year + 1, 1, 1)
+
+    return station
+
+
+def get_end_date_to_use(station):
+    if station.end_date.month == 12 and station.end_date.day == 31:
+        return station.end_date
+    else:
+        return datetime.datetime(station.end_date.year - 1, 12, 31)
+
+
 def assign_in_basins_attribute(basins, coops):
     """
     Assigns in_basins attribute
@@ -107,39 +126,21 @@ def assign_in_basins_attribute(basins, coops):
     basins_ids = [item.station_id for item in basins]
     counter = 0
 
-    header = ("station_id,station_name,state,BASINS_start_date,"
-              "BASINS_end_date,COOP_start_date,COOP_end_date\n")
-
-    with open(os.path.join('src', 'break_with_basins.csv'), 'w') as file:
-        file.write(header)
-        for item in coops:
-            if item.station_id[-6:] in basins_ids:
-                item.in_basins = True
-                for x in basins:
-                    if item.station_id[-6:] == x.station_id:
-                        if item.start_date > x.end_date:
-                            item.break_with_basins = True
-                            to_file = item.station_id + ','
-                            to_file += item.station_name + ','
-                            to_file += (str(x.start_date.month) + '/' +
-                                        str(x.start_date.day) + '/' +
-                                        str(x.start_date.year) + ',')
-                            to_file += (str(x.end_date.month) + '/' +
-                                        str(x.end_date.day) + '/' +
-                                        str(x.end_date.year) + ',')
-                            to_file += (str(item.start_date.month) + '/' +
-                                        str(item.start_date.day) + '/' +
-                                        str(item.start_date.year) + ',')
-                            to_file += (str(item.end_date.month) + '/' +
-                                        str(item.end_date.day) + '/' +
-                                        str(item.end_date.year))
-                            to_file += '\n'
-                            file.write(to_file)
-                            counter += 1
-
-    message = (f"There are {counter} stations with a gap between the end of "
-               "BASINS and the start of the COOP record")
-    print(message)
+    for coop in coops:
+        if coop.station_id[-6:] in basins_ids:
+            coop.in_basins = True
+            for x in basins:
+                if coop.station_id[-6:] == x.station_id:
+                    if coop.start_date > x.end_date:
+                        coop.break_with_basins = True
+                        coop.start_date_to_use = get_start_date_to_use(coop)
+                        coop.end_date_to_use = get_end_date_to_use(coop)
+                    else:
+                        coop.start_date_to_use = x.end_date + datetime.timedelta(days=1)
+                        coop.end_date_to_use = get_end_date_to_use(coop)
+        else:
+            coop.start_date_to_use = get_start_date_to_use(coop)
+            coop.end_date_to_use = get_end_date_to_use(coop)
 
     return coops
 
@@ -149,46 +150,34 @@ def get_coop_stations_to_use(coops):
     Determines which C-HPD v2 stations to use
 
     Rules:
-    1. If a station is in BASINS and is current, use the station
-    2. If a station is in BASINS and is not current, but there is no gap
-       between the BASINS end date and the C-HPD v2 start date,  use the
-       station as long as there is new data
+    1. If a station is not in BASINS, use the station if it has at least
+       10 consecutive years of data since 1990
+    2. If a station is in BASINS and there is no gap between the BASINS
+       end date and the C-HPD v2 start date, use the station as long as
+       there is new data
     3. If a stations is in BASINS and there is a gap between the BASINS
        end date and the C-HPD v2 start date, only use the station if there
        are at least 10 years of data from C-HPD v2
-    4. If a station is not in BASINS, use the station if it has at least
-       10 consecutive years of data since 1990
 
     """
     data = []
 
-    for item in coops:
-        if item.in_basins:
-            # rule 2 - if no gap, and if new data, use station
-            if not item.break_with_basins:
-                if item.end_date.year < 2006:  # end year for BASINS
-                    pass
-                else:
-                    data.append(item)
-            # rule 3 - if gap, only use if 10 years of data
-            else:
-                if relativedelta(item.end_date, item.start_date).years >= 10:
-                    data.append(item)
+    required_delta = datetime.timedelta(days=3650) # approximately 10 years
 
-            # TODO finalize this
-            # if item.start_date
-            # if item.end_date <= common.CUTOFF_START_DATE:
-            #     pass
-            # else:
-            #     coops_to_use.append(item)
-        else:
-            # if not in BASINS, use if >= ten years of data from recent past
-            if item.station_id[-6:] == '214546':
-                print('debug')
-            if relativedelta(item.end_date, item.start_date).years >= 10:
+    for item in coops:
+        if not item.in_basins:
+            # Rule 1
+            if item.end_date_to_use - item.start_date_to_use >= required_delta:
                 data.append(item)
+        else:
+            if not item.break_with_basins:
+                # Rule 2
+                if item.end_date_to_use > item.start_date_to_use:
+                    data.append(item)
             else:
-                pass
+                # Rule 3
+                if item.end_date_to_use - item.start_date_to_use >= required_delta:
+                    data.append(item)
 
     return data
 
@@ -238,11 +227,18 @@ def get_latest_start_date(coops):
 
 
 def check_stations_handled_properly(data):
+    """
+    Tests whether stations are handled properly
+    according to values of attributes in_basins and
+    break_with_basins as well as if station is current
+
+    No return value
+    """
 
     data_ids = [x.station_id[-6:] for x in data]
 
-    # 332974 -- in_basins, current, no break_with_basins --> use
-    assert check_conditions_handled('332974', data_ids, True)
+    # 103732 -- in_basins, current, no break_with_basins --> use
+    assert check_conditions_handled('103732', data_ids, True)
 
     # 106174 -- in_basins, not current, no break_with_basins --> use
     assert check_conditions_handled('106174', data_ids, True)
@@ -280,12 +276,6 @@ def get_basins_not_in_coop(basins, coops):
                 writer.writerow(asdict(item).values())
 
 
-
-    # for item in coops:
-    #     if item.station_id[-6:] in basins_ids:
-    #         item.in_basins = True
-
-
 if __name__ == '__main__':
     # If you have the most recent station inventory file, you can prevent
     # re-downloading that file by commenting out the
@@ -302,15 +292,14 @@ if __name__ == '__main__':
     coop_stations = assign_in_basins_attribute(basins_stations, coop_stations)
     coops_to_use = get_coop_stations_to_use(coop_stations)
 
-    # TODO come up with a better way of formatting this
     check_stations_handled_properly(coops_to_use)
 
     write_coop_stations_to_use(coops_to_use)
 
     # Exploratory functions
-    get_earliest_end_date(coop_stations)
-    get_latest_start_date(coop_stations)
+    # get_earliest_end_date(coop_stations)
+    # get_latest_start_date(coop_stations)
 
-    check_lat_lon(basins_stations, coop_stations)
+    # check_lat_lon(basins_stations, coop_stations)
 
-    get_basins_not_in_coop(basins_stations, coop_stations)
+    # get_basins_not_in_coop(basins_stations, coop_stations)
