@@ -79,7 +79,7 @@ def get_dates(station_id):
 def get_stations_with_matches(station_subset):
     first_groups = []
     second_groups = []
-    for station in isd_stations_with_some_data:
+    for station in station_subset:
         first_groups.append(station.station_id[0:6])
         second_groups.append(station.station_id[-5:])
 
@@ -145,6 +145,16 @@ def round_end_date(x):
 
     return x
 
+
+def read_percent_missing():
+    with open(os.path.join('src', 'percent_missing.csv'), 'r') as file:
+        data = file.readlines()
+
+    split_data = [item.strip('\n').split(',') for item in data]
+    percent_missing = {x[0]: float(x[1]) for x in split_data}
+
+    return percent_missing
+
 if __name__ == '__main__':
     all_isd_stations = common.get_stations('isd')
     all_zero = check_all_zero()
@@ -155,12 +165,19 @@ if __name__ == '__main__':
     basins_stations = common.make_basins_stations(split_basins_data)
     wban_basins = get_isd_stations.read_homr_codes()
 
+    percent_missing = read_percent_missing()
+
     # if you need to make the real_end_dates file, call this function
     # make_real_end_dates_file(all_isd_stations)
 
-    isd_stations_to_use = common.get_stations('isd', '_with_real_dates')
+    isd_stations_with_real_dates = common.get_stations('isd', '_with_real_dates')
 
-    prefix_full_ids = get_stations_with_matches(isd_stations_with_some_data)
+    isd_stations_to_use = []
+    for item in isd_stations_with_real_dates:
+        if percent_missing[item.station_id] <= 25.0:
+            isd_stations_to_use.append(item)
+
+    prefix_full_ids = get_stations_with_matches(isd_stations_to_use)
 
     station_ids_that_match = []
     for item in prefix_full_ids:
@@ -194,9 +211,40 @@ if __name__ == '__main__':
                                 if relativedelta(item.end_date_to_use, item.start_date_to_use).years < 10:
                                     pass
                                 else:
-                                    print(item)
                                     final_stations.append(item)
 
+    counter = 0
+    for x in prefix_full_ids:
+        stuff = [station for station in isd_stations_to_use if station.station_id in list(x.values())[0]]
+        if stuff[0].start_date_to_use < stuff[1].start_date_to_use:
+            earlier_station = stuff[0]
+            later_station = stuff[1]
+        else:
+            earlier_station = stuff[1]
+            later_station = stuff[0]
+
+        # the stations in this category fall in four groups
+        # 1. no gap; use both stations
+        # if (later_station.start_date_to_use - earlier_station.end_date_to_use).days == 1:
+        print(earlier_station.start_date_to_use)
+        print(earlier_station.end_date_to_use)
+        print(later_station.start_date_to_use)
+        print(later_station.end_date_to_use)
+        print('\n')
+
+        counter += 1
+
+        # 2. one station has only one day of data; other station has ???
+        # if (stuff[1].end_date_to_use - stuff[1].start_date_to_use).days < 1:
+
+
+        # 3. gap between two stations; earlier station has insufficient data
+
+        # 4. overlappers
+
+
+    print(f'counter -- {counter}')
+        # # break
 
     filename = os.path.join('src', 'isd_stations_to_use_final.csv')
     with open(filename, 'w', newline='') as file:
@@ -204,24 +252,6 @@ if __name__ == '__main__':
         writer.writerow(asdict(final_stations[0]).keys())
         for item in final_stations:
             writer.writerow(asdict(item).values())
-
-
-
-
-    # for x in prefix_full_ids:
-    #     stuff = [station for station in isd_stations_with_some_data if station.station_id in list(x.values())[0]]
-    #     start_date, end_date = get_dates(stuff[0].station_id)
-    #     other_start_date, other_end_date = get_dates(stuff[1].station_id)
-
-        # if start_date < other_start_date:
-        #     if end_date > other_end_date:
-        #         print('debug')
-        # if other_end_date -
-
-        # if end_date < other_end_date:
-        #     if start_date > other_start_date:
-        #         print('other_debug')
-
 
         # if other_start_date == other_end_date:
         #     counter += 1
