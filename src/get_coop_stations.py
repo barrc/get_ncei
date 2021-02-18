@@ -54,7 +54,8 @@ def read_coop_file(station_inv_file):
             stations.append(common.Station(row[0], row[5], row[4],
                                            common.make_date(por[0]),
                                            common.make_date(por[1]),
-                                           row[1], row[2], False, False, 'coop', None, None))
+                                           row[1], row[2], False, False, 'coop',
+                                           None, None))
 
     return stations
 
