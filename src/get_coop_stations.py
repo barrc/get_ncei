@@ -1,9 +1,10 @@
 import csv
 import os
-import requests
 from dataclasses import asdict
 import datetime
 from decimal import Decimal
+
+import requests
 
 import common
 
@@ -92,20 +93,22 @@ def check_lat_lon(basins, coops):
 
 def get_start_date_to_use(station):
     if station.start_date <= common.EARLIEST_START_DATE:
-        return common.EARLIEST_START_DATE
+        start_date = common.EARLIEST_START_DATE
     elif station.start_date.month == 1 and station.start_date.day == 1:
-        return station.start_date
+        start_date = station.start_date
     else:
-        return datetime.datetime(station.start_date.year + 1, 1, 1)
+        start_date = datetime.datetime(station.start_date.year + 1, 1, 1)
 
-    return station
+    return start_date
 
 
 def get_end_date_to_use(station):
     if station.end_date.month == 12 and station.end_date.day == 31:
-        return station.end_date
+        end_date = station.end_date
     else:
-        return datetime.datetime(station.end_date.year - 1, 12, 31)
+        end_date = datetime.datetime(station.end_date.year - 1, 12, 31)
+
+    return end_date
 
 
 def assign_in_basins_attribute(basins, coops):
