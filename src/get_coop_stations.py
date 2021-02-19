@@ -11,7 +11,7 @@ import common
 
 def download_station_inventory_file():
     """
-    Downloads the station inventory file for COOP-HPD version 2 from the NOAA
+    Downloads the station inventory file for COOP-HPD version 2 from NOAA
 
     The station inventory file is updated on an irregular schedule,
     so the function also determines what the URL for the file should be
@@ -118,11 +118,8 @@ def assign_in_basins_attribute(basins, coops):
     Iterates through all C-HPD Stations and determine if the station_id
     maches a station_id in the BASINS dataset
 
-    Writes file break_with_basins to determine which stations have
-    a break between the end of the BASINS reporting period and the
-    beginning of the C-HPD v2 reporting period
-
-    Returns list of C-HPD stations with in_basins attribute assigned
+    Returns list of C-HPD stations with in_basins and
+    break_with_basins attributes assigned
     """
 
     basins_ids = [item.station_id for item in basins]
@@ -170,8 +167,9 @@ def get_coop_stations_to_use(coops):
     for item in coops:
         if not item.in_basins:
             # Rule 1
-            if item.end_date_to_use - item.start_date_to_use >= ten_years:
-                data.append(item)
+            if item.start_date_to_use >= common.EARLIEST_START_DATE:
+                if item.end_date_to_use - item.start_date_to_use >= ten_years:
+                   data.append(item)
         else:
             if not item.break_with_basins:
                 # Rule 2
