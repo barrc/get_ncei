@@ -191,7 +191,7 @@ def plot_cumulative_by_year(data_1, data_2, start_year, end_year):
 
 
 if __name__ == '__main__':
-    coop_stations_to_use = common.get_stations('coop')
+    coop_stations_to_use = common.get_stations('coop_stations_to_use.csv')
 
     for item in coop_stations_to_use:
         if not os.path.exists(os.path.join(

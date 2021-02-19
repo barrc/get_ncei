@@ -32,41 +32,41 @@ class Station:
     start_date_to_use: datetime.datetime
     end_date_to_use: datetime.datetime
 
-    def get_start_date_to_use(self, basins, homr_codes=None):
-        if self.in_basins:
-            if self.network == 'coop':
-                match = [x for x in basins if self.station_id[-6:] == x.station_id]
-                assert len(match) == 1
-                x = match[0]
-            elif self.network == 'isd':
-                related_id = homr_codes[self.station_id[-5:]]
-                match = [x for x in basins if related_id == x.station_id]
-                assert len(match) == 1
-                x = match[0]
-            if self.start_date <= x.end_date:
-                return x.end_date + datetime.timedelta(days=1)
-            else:
-                return self.start_date
+    # def get_start_date_to_use(self, basins, homr_codes=None):
+    #     if self.in_basins:
+    #         if self.network == 'coop':
+    #             match = [x for x in basins if self.station_id[-6:] == x.station_id]
+    #             assert len(match) == 1
+    #             x = match[0]
+    #         elif self.network == 'isd':
+    #             related_id = homr_codes[self.station_id[-5:]]
+    #             match = [x for x in basins if related_id == x.station_id]
+    #             assert len(match) == 1
+    #             x = match[0]
+    #         if self.start_date <= x.end_date:
+    #             return x.end_date + datetime.timedelta(days=1)
+    #         else:
+    #             return self.start_date
 
-        else:
-            if self.start_date <= EARLIEST_START_DATE:
-                return EARLIEST_START_DATE
-            else:
-                return self.start_date
+    #     else:
+    #         if self.start_date <= EARLIEST_START_DATE:
+    #             return EARLIEST_START_DATE
+    #         else:
+    #             return self.start_date
 
-    def get_end_date_to_use(self, basins, homr_codes=None):
-        # TODO does it matter if in basins?
-        if self.end_date >= CUTOFF_END_DATE:
-            return CUTOFF_END_DATE
-        elif self.network == 'coop':
-            # if coop, use last complete year
-            if self.end_date.day == 31 and self.end_date.month == 12:
-                return self.end_date
-            else:
-                return datetime.datetime(self.end_date.year - 1, 12, 31)
-        else:
-            # for ISD, use end_date, because may be adjacent to another station
-            return self.end_date
+    # def get_end_date_to_use(self, basins, homr_codes=None):
+    #     # TODO does it matter if in basins?
+    #     if self.end_date >= CUTOFF_END_DATE:
+    #         return CUTOFF_END_DATE
+    #     elif self.network == 'coop':
+    #         # if coop, use last complete year
+    #         if self.end_date.day == 31 and self.end_date.month == 12:
+    #             return self.end_date
+    #         else:
+    #             return datetime.datetime(self.end_date.year - 1, 12, 31)
+    #     else:
+    #         # for ISD, use end_date, because may be adjacent to another station
+    #         return self.end_date
 
 
 def make_date(input_date):
@@ -104,7 +104,8 @@ def make_basins_stations(data):
     stations = [Station(item[0], item[-1], item[2][0:2].upper(),
                         make_basins_date(item[8]),
                         make_basins_date(item[9]),
-                        item[4], item[5], True, True, 'basins', make_basins_date(item[8]), make_basins_date(item[9]))
+                        item[4], item[5], True, True, 'basins',
+                        make_basins_date(item[8]), make_basins_date(item[9]))
                 for item in data]
 
     return stations
@@ -115,13 +116,9 @@ def str_date_to_datetime(str_date):
     return datetime.datetime(int(x[0]), int(x[1]), int(x[2]))
 
 
-def get_stations(network, subset_string=False):
+def get_stations(short_filename):
     stations = []
-    if subset_string:
-        filename = os.path.join('src', network + '_stations_to_use' + subset_string + '.csv')
-    else:
-        filename = os.path.join('src', network + '_stations_to_use.csv')
-
+    filename = os.path.join('src', short_filename)
 
     with open(filename, 'r') as file:
         coop_reader = csv.reader(file)
