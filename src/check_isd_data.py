@@ -96,7 +96,7 @@ def get_stations_with_matches(station_subset):
     for x in flat_first_groups:
         little_dict = {}
         little_dict[x] = []
-        for y in isd_stations_with_some_data:
+        for y in station_subset:
             if y.station_id[0:6] == x:
                 little_dict[x].append(y.station_id)
         matches.append(little_dict)
@@ -104,7 +104,7 @@ def get_stations_with_matches(station_subset):
     for x in flat_second_groups:
         little_dict = {}
         little_dict[x] = []
-        for y in isd_stations_with_some_data:
+        for y in station_subset:
             if y.station_id[-5:] == x:
                 little_dict[x].append(y.station_id)
         matches.append(little_dict)
@@ -131,53 +131,31 @@ def make_real_end_dates_file(all_isd_stations):
 
 def round_start_date(x):
     if x.start_date_to_use.month == 1:
-        x.start_date_to_use = datetime.datetime(x.start_date_to_use.year, 1, 1)
+        return_date = datetime.datetime(x.start_date_to_use.year, 1, 1)
     else:
-        x.start_date_to_use = datetime.datetime(x.start_date_to_use.year + 1, 1, 1)
+        return_date = datetime.datetime(x.start_date_to_use.year + 1, 1, 1)
 
-    return x
+    return return_date
 
 def round_end_date(x):
     if x.end_date_to_use.month == 12:
-        x.end_date_to_use = datetime.datetime(x.end_date_to_use.year, 12, 31)
+        return_date = datetime.datetime(x.end_date_to_use.year, 12, 31)
     else:
-        x.end_date_to_use = datetime.datetime(x.end_date_to_use.year - 1, 12, 31)
+       return_date = datetime.datetime(x.end_date_to_use.year - 1, 12, 31)
 
-    return x
+    return return_date
 
 
-def read_percent_missing():
-    with open(os.path.join('src', 'percent_missing.csv'), 'r') as file:
-        data = file.readlines()
 
-    split_data = [item.strip('\n').split(',') for item in data]
-    percent_missing = {x[0]: float(x[1]) for x in split_data}
-
-    return percent_missing
 
 if __name__ == '__main__':
-    all_isd_stations = common.get_stations('isd')
-    all_zero = check_all_zero()
-
-    isd_stations_with_some_data = [x for x in all_isd_stations if x.station_id not in all_zero]
+    all_isd_stations = common.get_stations('isd_herewegoagain.csv')
 
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
     wban_basins = get_isd_stations.read_homr_codes()
 
-    percent_missing = read_percent_missing()
-
-    # if you need to make the real_end_dates file, call this function
-    # make_real_end_dates_file(all_isd_stations)
-
-    isd_stations_with_real_dates = common.get_stations('isd', '_with_real_dates')
-
-    isd_stations_to_use = []
-    for item in isd_stations_with_real_dates:
-        if percent_missing[item.station_id] <= 25.0:
-            isd_stations_to_use.append(item)
-
-    prefix_full_ids = get_stations_with_matches(isd_stations_to_use)
+    prefix_full_ids = get_stations_with_matches(all_isd_stations)
 
     station_ids_that_match = []
     for item in prefix_full_ids:
@@ -185,54 +163,100 @@ if __name__ == '__main__':
         station_ids_that_match.append(ids[0])
         station_ids_that_match.append(ids[1])
 
+    # approximately 10 years
+    ten_years = datetime.timedelta(days=3650)
+
     final_stations = []
-    for item in isd_stations_to_use:
+    for item in all_isd_stations:
         if item.station_id not in station_ids_that_match:
             if not item.in_basins:
-                item = round_start_date(item)
-                item = round_end_date(item)
 
-                if relativedelta(item.end_date_to_use, item.start_date_to_use).years >= 10:
+                rounded_start_date = round_start_date(item)
+                rounded_end_date = round_end_date(item)
+
+                if rounded_end_date - rounded_start_date >= ten_years:
                     final_stations.append(item)
-            else:
-                item = round_start_date(item)
-                item = round_end_date(item)
 
-                if item.end_date_to_use <= item.start_date_to_use:
-                    pass
+            else:
+                if not item.break_with_basins:
+                    if item.end_date_to_use > item.start_date_to_use:
+                        final_stations.append(item)
 
                 else:
-                    for x in basins_stations:
-                        if x.station_id == wban_basins[item.station_id[-5:]]:
-                            if (item.start_date_to_use - x.end_date_to_use).days == 1:
-                                final_stations.append(item)
-                            else:
-                                item.break_with_basins = True
-                                if relativedelta(item.end_date_to_use, item.start_date_to_use).years < 10:
-                                    pass
-                                else:
-                                    final_stations.append(item)
+                    rounded_start_date = round_start_date(item)
+                    rounded_end_date = round_end_date(item)
+
+                    if rounded_end_date - rounded_start_date >= ten_years:
+                        final_stations.append(item)
 
     counter = 0
+    combos = []
     for x in prefix_full_ids:
-        stuff = [station for station in isd_stations_to_use if station.station_id in list(x.values())[0]]
-        if stuff[0].start_date_to_use < stuff[1].start_date_to_use:
-            earlier_station = stuff[0]
-            later_station = stuff[1]
+        matches = [a for a in all_isd_stations if a.station_id in list(x.values())[0]]
+        if matches[0].start_date_to_use == matches[0].end_date_to_use:
+            break
+        if matches[1].start_date_to_use == matches[1].end_date_to_use:
+            pass
         else:
-            earlier_station = stuff[1]
-            later_station = stuff[0]
+            if matches[0].start_date_to_use <= matches[1].start_date_to_use:
+                earlier_station = matches[0]
+                later_station = matches[1]
+            elif matches[1].start_date_to_use < matches[0].start_date_to_use:
+                earlier_station = matches[1]
+                later_station = matches[0]
+
+            gap = (later_station.start_date_to_use - earlier_station.end_date_to_use).days
+            if gap < 0:
+
+                if later_station.end_date_to_use < earlier_station.end_date_to_use:
+                    if earlier_station.start_date_to_use.month != 1:
+                        earlier_station.start_date_to_use = datetime.datetime(earlier_station.start_date_to_use.year + 1, 1, 1)
+                        final_stations.append(earlier_station)
+                else:
+                    earlier_station.start_date_to_use = datetime.datetime(earlier_station.start_date_to_use.year + 1, 1, 1)
+                    earlier_station.end_date_to_use = datetime.datetime(later_station.start_date_to_use.year, later_station.start_date_to_use.month, later_station.start_date_to_use.day-1)
+                    final_stations.append(earlier_station)
+                    final_stations.append(later_station)
+                    combo = (earlier_station.station_id, later_station.station_id)
+                    combos.append(combo)
+
+            elif gap == 1:
+                final_stations.append(earlier_station)
+                final_stations.append(later_station)
+                combo = (earlier_station.station_id, later_station.station_id)
+                combos.append(combo)
+            else:
+                assert later_station.end_date_to_use - later_station.start_date_to_use > ten_years
+                assert later_station.start_date_to_use.month == 1
+                assert later_station.end_date_to_use.month == 12
+
+                # just use the later_station and ignore the earlier_station
+                final_stations.append(later_station)
+
+
+    print(combos)
+
+
+    # counter = 0
+    # for x in prefix_full_ids:
+    #     stuff = [station for station in isd_stations_to_use if station.station_id in list(x.values())[0]]
+    #     if stuff[0].start_date_to_use < stuff[1].start_date_to_use:
+    #         earlier_station = stuff[0]
+    #         later_station = stuff[1]
+    #     else:
+    #         earlier_station = stuff[1]
+    #         later_station = stuff[0]
 
         # the stations in this category fall in four groups
         # 1. no gap; use both stations
         # if (later_station.start_date_to_use - earlier_station.end_date_to_use).days == 1:
-        print(earlier_station.start_date_to_use)
-        print(earlier_station.end_date_to_use)
-        print(later_station.start_date_to_use)
-        print(later_station.end_date_to_use)
-        print('\n')
+        # print(earlier_station.start_date_to_use)
+        # print(earlier_station.end_date_to_use)
+        # print(later_station.start_date_to_use)
+        # print(later_station.end_date_to_use)
+        # print('\n')
 
-        counter += 1
+        # counter += 1
 
         # 2. one station has only one day of data; other station has ???
         # if (stuff[1].end_date_to_use - stuff[1].start_date_to_use).days < 1:
@@ -243,15 +267,15 @@ if __name__ == '__main__':
         # 4. overlappers
 
 
-    print(f'counter -- {counter}')
-        # # break
+    # print(f'counter -- {counter}')
+    #     # # break
 
-    filename = os.path.join('src', 'isd_stations_to_use_final.csv')
-    with open(filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(asdict(final_stations[0]).keys())
-        for item in final_stations:
-            writer.writerow(asdict(item).values())
+    # filename = os.path.join('src', 'isd_stations_to_use_final.csv')
+    # with open(filename, 'w', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(asdict(final_stations[0]).keys())
+    #     for item in final_stations:
+    #         writer.writerow(asdict(item).values())
 
         # if other_start_date == other_end_date:
         #     counter += 1
