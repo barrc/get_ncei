@@ -25,7 +25,7 @@ import get_isd_stations
 
 # "01,0000,9,5"
 
-def quick_check(isd_station, start_date, end_date):
+def get_raw_data(isd_station, start_date, end_date):
     start_date_string = f"{start_date.year:04d}-{start_date.month:02d}-{start_date.day:02d}"
     end_date_string = f"{end_date.year:04d}-{end_date.month:02d}-{end_date.day:02d}"
 
@@ -77,24 +77,19 @@ def get_dates(station_id):
 
     return (first_date, last_date)
 
-def get_date_dict(first_date, last_date):
-
-    delta = datetime.timedelta(hours=1)
-    date_list = [first_date]
-
-    iterate_date = first_date
-    while iterate_date < last_date:
-        iterate_date += delta
-        date_list.append(iterate_date)
-
-    return {key:'9999' for key in date_list}
 
 
-def read_raw(station_id, first_date, last_date):
+
+def read_raw(station):
+
+    first_date = station.start_date_to_use
+    last_date = station.end_date_to_use
+    station_id = station.station_id
+
     with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
         data = json.load(file)
 
-    date_dict = get_date_dict(first_date, last_date)
+    date_dict = common.get_date_dict('9999', first_date, last_date)
 
     for item in data:
         try:
@@ -146,34 +141,82 @@ def read_raw(station_id, first_date, last_date):
 
     return
 
+def get_percent_missing(isd, split_isd_data):
+    date_dict = common.get_date_dict('0', isd.start_date_to_use, isd.end_date_to_use)
+
+    for x in split_isd_data:
+        date_dict[datetime.datetime(int(x[1]), int(x[2]), int(x[3]), int(x[4]))] = x[-1]
+
+    missing = 0
+    counter = 0
+    for key, value in date_dict.items():
+        if value == '9999':
+            missing += 1
+        counter += 1
+
+    return missing/counter*100
+
 
 if __name__ == '__main__':
-    isd_stations_to_use = common.get_stations('isd')
+    isd_stations_to_use = common.get_stations('isd_stations_to_try.csv')
 
     split_basins_data = common.read_basins_file()
     basins_stations = common.make_basins_stations(split_basins_data)
 
     wban_basins = get_isd_stations.read_homr_codes()
+
+    data = []
     for item in isd_stations_to_use:
-        # if os.path.exists(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', item.station_id + '.json')):
-        #     pass
-        # else:
-        # if item.station_id == '91285021504':
+        if not os.path.exists(os.path.join(
+                common.DATA_BASE_DIR, 'raw_isd_data',
+                item.station_id + '.json')):
             print(item.station_id)
-            s_date = item.get_start_date_to_use(basins_stations, wban_basins)
-            e_date = item.get_end_date_to_use(basins_stations, wban_basins)
-            # quick_check(item.station_id, s_date, e_date)
+            get_raw_data(item.station_id, item.start_date, item.end_date)
+
+        else:
+            print(item.station_id)
             real_start_date, real_end_date = get_dates(item.station_id)
-            read_raw(item.station_id, real_start_date, real_end_date)
-            split_isd_data, isd_years = common.read_precip(s_date, e_date, os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', item.station_id + '.dat'))
+
+            if not real_start_date and not real_end_date:
+                # all zero
+                print(item.station_id)
+                with open(os.path.join(
+                    common.DATA_BASE_DIR, 'processed_isd_data',
+                    item.station_id + '.dat'), 'w') as file:
+                        file.write('')
+            else:
+                # assign real_start_date and real_end_date to station
+                item.start_date_to_use = real_start_date
+                item.end_date_to_use = real_end_date
+
+                # if start_date is like 1/3 or end date is 12/28, can deal with that when we fill missing data
+
+                read_raw(item)
+                split_isd_data, isd_years = common.read_precip(
+                    item.start_date_to_use,
+                    item.end_date_to_use,
+                    os.path.join(
+                        common.DATA_BASE_DIR, 'processed_isd_data',
+                        item.station_id + '.dat'))
+
+                # get percent missing
+                percent_missing = get_percent_missing(item, split_isd_data)
+
+                # use if < 25% missing data -- communication with Glenn Fernandez 1/5/2021
+                if percent_missing < 25.0:
+                    data.append(item)
 
 
-        # if all(x==0 for x in isd_years.values()):
-        #     with open('all_zero.csv', 'a') as file:
-        #         file.write(item.station_id)
-        #         file.write('\n')
-        # else:
-        #     actually_use.append(item)
+
+
+    filename = os.path.join('src', 'isd_herewegoagain.csv')
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(asdict(data[0]).keys())
+        for item in data:
+            writer.writerow(asdict(item).values())
+
+
 
 
 
