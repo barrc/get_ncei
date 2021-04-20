@@ -91,26 +91,6 @@ def check_lat_lon(basins, coops):
     print(f'mismatched: {mismatched}')
 
 
-def get_start_date_to_use(station):
-    if station.start_date <= common.EARLIEST_START_DATE:
-        start_date = common.EARLIEST_START_DATE
-    elif station.start_date.month == 1 and station.start_date.day == 1:
-        start_date = station.start_date
-    else:
-        start_date = datetime.datetime(station.start_date.year + 1, 1, 1)
-
-    return start_date
-
-
-def get_end_date_to_use(station):
-    if station.end_date.month == 12 and station.end_date.day == 31:
-        end_date = station.end_date
-    else:
-        end_date = datetime.datetime(station.end_date.year - 1, 12, 31)
-
-    return end_date
-
-
 def assign_in_basins_attribute(basins, coops):
     """
     Assigns in_basins attribute
@@ -131,17 +111,20 @@ def assign_in_basins_attribute(basins, coops):
                 if coop.station_id[-6:] == x.station_id:
                     if coop.start_date > x.end_date:
                         coop.break_with_basins = True
-                        coop.start_date_to_use = get_start_date_to_use(coop)
-                        coop.end_date_to_use = get_end_date_to_use(coop)
+                        coop.start_date_to_use = common.get_start_date_to_use(coop)
+                        coop.end_date_to_use = common.get_end_date_to_use(coop)
                     else:
                         coop.start_date_to_use = (
                             x.end_date + datetime.timedelta(days=1))
-                        coop.end_date_to_use = get_end_date_to_use(coop)
+                        coop.end_date_to_use = common.get_end_date_to_use(coop)
         else:
-            coop.start_date_to_use = get_start_date_to_use(coop)
-            coop.end_date_to_use = get_end_date_to_use(coop)
+            coop.start_date_to_use = common.get_start_date_to_use(coop)
+            coop.end_date_to_use = common.get_end_date_to_use(coop)
 
     return coops
+
+
+
 
 
 def get_coop_stations_to_use(coops):
@@ -150,7 +133,7 @@ def get_coop_stations_to_use(coops):
 
     Rules:
     1. If a station is not in BASINS, use the station if it has at least
-       10 consecutive years of data since 1990
+       10 consecutive years of data since 2000
     2. If a station is in BASINS and there is no gap between the BASINS
        end date and the C-HPD v2 start date, use the station as long as
        there is new data
