@@ -1,13 +1,10 @@
 import csv
 import datetime
 import os
-import random
 
-import matplotlib.pyplot as plt
 import requests
 
 import common
-import get_coop_precip
 
 
 class NLDAS:
