@@ -197,11 +197,11 @@ def get_corresponding_gldas(missing_dates, gldas_data):
             if missing_date in gldas_keys:
                 missing[missing_date] = gldas_data[missing_date]
             else:
-                subtracted_date = missing_date - datetime.timedelta(hours = 1)
+                subtracted_date = missing_date - datetime.timedelta(hours=1)
                 if subtracted_date in gldas_keys:
                     missing[missing_date] = gldas_data[subtracted_date]
                 else:
-                    subtracted_date = missing_date - datetime.timedelta(hours = 2)
+                    subtracted_date = missing_date - datetime.timedelta(hours=2)
                     if subtracted_date in gldas_keys:
                         missing[missing_date] = gldas_data[subtracted_date]
                     else:
