@@ -5,34 +5,9 @@ import os
 import requests
 
 import common
+import common_fill
 
 
-class NLDAS:
-    DEGREES_PER_GRID_CELL = 1.0 / 8.0
-    WESTMOST_GRID_EDGE = -125.0
-    SOUTHMOST_GRID_EDGE = 25.0
-    WESTMOST_GRID_CENTER = WESTMOST_GRID_EDGE + DEGREES_PER_GRID_CELL / 2.0
-    SOUTHMOST_GRID_CENTER = SOUTHMOST_GRID_EDGE + DEGREES_PER_GRID_CELL / 2.0
-
-
-def grid_cell_from_lat_lon(lat, lon):
-    x = int(round((lon - NLDAS.WESTMOST_GRID_CENTER)
-                  / NLDAS.DEGREES_PER_GRID_CELL))
-    y = int(round((lat - NLDAS.SOUTHMOST_GRID_CENTER)
-                  / NLDAS.DEGREES_PER_GRID_CELL))
-    return str(x), str(y)
-
-
-def get_nldas_data(data_type, start_date_str, end_date_str, x_str, y_str):
-    precip_url = "https://hydro1.sci.gsfc.nasa.gov/daac-bin/access/" \
-                  + "timeseries.cgi?variable=NLDAS:NLDAS_FORA0125_H.002:" \
-                  + data_type + "&startDate=" + start_date_str \
-                  + "&endDate=" + end_date_str \
-                  + "&location=NLDAS:X" + x_str + "-Y" + y_str + "&type=asc2"
-
-    r = requests.get(precip_url)
-
-    return r.content
 
 
 def get_gldas_data(data_type, start_date, end_date, lat, lon):
@@ -81,37 +56,15 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
     return data
 
 
-def process_nldas_data(data):
-    metadata = {}
-    nldas_dict = {}
 
-    split_data = data.decode().split('\n')
-    for line in split_data:
-        ls = line.strip()
-        if "error" in ls.lower():
-            raise ValueError(ls.lower())
-        date_time_data = ls.split()
-        if (len(date_time_data) == 3 and len(date_time_data[0]) == 10
-                and len(date_time_data[1]) == 3):
-            ymd = date_time_data[0].split('-')
-            local_date = datetime.datetime(
-                             int(ymd[0]), int(ymd[1]), int(ymd[2]),
-                             int(date_time_data[1][:-1]))
-            nldas_dict[local_date] = float(date_time_data[2])/25.4
-        else:
-            meta_item = ls.split('=')
-            if len(meta_item) == 2:
-                metadata[meta_item[0]] = meta_item[1]
-
-    return nldas_dict
 
 
 def process_gldas_data(data):
     metadata = {}
-    nldas_dict = {}
+    gldas_dict = {}
+
     for x in data:
         if x:
-
             split_data = x.decode().split('\n')
             for line in split_data:
                 ls = line.strip()
@@ -123,13 +76,13 @@ def process_gldas_data(data):
                     local_date = datetime.datetime(
                                     int(ymd[0]), int(ymd[1]), int(ymd[2][0:2]),
                                     int(ymd[2][3:5]))
-                    nldas_dict[local_date] = float(date_time_data[1])/25.4*3600
+                    gldas_dict[local_date] = float(date_time_data[1])/25.4*3600
                 else:
                     meta_item = ls.split('=')
                     if len(meta_item) == 2:
                         metadata[meta_item[0]] = meta_item[1]
 
-    return nldas_dict
+    return gldas_dict
 
 
 def read_data(filename):
@@ -138,22 +91,6 @@ def read_data(filename):
         precip_data = file.readlines()
 
     return [item.split() for item in precip_data]
-
-
-def get_missing_dates(data_1):
-    missing_dates = []
-    for x in data_1:
-        if x[-1] == '-9999':
-            try:
-                missing_dates.append(
-                    datetime.datetime(int(x[1]), int(x[2]), int(x[3]),
-                                      int(x[4])))
-            except ValueError:
-                missing_dates.append(
-                    datetime.datetime(int(x[1]), int(x[2]), int(x[3])) +
-                    datetime.timedelta(days=1))
-
-    return missing_dates
 
 
 def adjust_dates(nldas, utc):
@@ -282,21 +219,22 @@ def write_file(o_file, filled_coop_data):
 def nldas_routine(coop_filename, station):
     coop_precip_data = read_data(coop_filename)
 
-    x_grid, y_grid = grid_cell_from_lat_lon(
+    x_grid, y_grid = common_fill.NLDAS.grid_cell_from_lat_lon(
         float(station.latitude), float(station.longitude))
 
     start_date_str = f'{station.start_date_to_use:%Y-%m-%dT24}'
     end_date_str = f'{station.end_date_to_use + datetime.timedelta(days=1):%Y-%m-%dT24}'
 
-    raw_nldas_data = get_nldas_data(
+    raw_nldas_data = common_fill.get_nldas_data(
         'APCPsfc', start_date_str, end_date_str, x_grid, y_grid)
-    nldas_precip_data = process_nldas_data(raw_nldas_data)
+    nldas_precip_data = common_fill.process_nldas_data(raw_nldas_data)
 
     # data returned is in UTC
     # for COOP, adjust this by utc_offset
     adjusted_nldas_data = adjust_dates(nldas_precip_data, offset)
 
-    coop_missing_dates = get_missing_dates(coop_precip_data)
+    coop_missing_dates = common_fill.get_missing_dates(
+        coop_precip_data, '-9999')
 
     first_missing_date, missing_dict = get_corresponding_nldas(
         coop_missing_dates, adjusted_nldas_data)
@@ -329,7 +267,7 @@ def gldas_routine(coop_filename, station):
         print(f'{station.station_id} has data there')
 
     adjusted_gldas_data = adjust_dates(gldas_precip_data, offset)
-    coop_missing_dates = get_missing_dates(coop_precip_data)
+    coop_missing_dates = get_missing_dates(coop_precip_data, '-9999')
 
     first_missing_date, missing_dict = get_corresponding_gldas(
         coop_missing_dates, adjusted_gldas_data)
@@ -382,3 +320,5 @@ if __name__ == '__main__':
 
         elif fill_type == 'gldas':
             gldas_routine(c_filename, station_)
+
+        exit()
