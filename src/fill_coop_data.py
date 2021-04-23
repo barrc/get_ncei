@@ -102,21 +102,7 @@ def adjust_dates(nldas, utc):
     return nldas_dict
 
 
-def get_corresponding_nldas(missing_dates, nldas_data):
 
-    first_nldas_date = list(nldas_data.items())[0][0]
-    # this will be some number of hours after the start_date,
-    # with a different hour depending on the UTC offset
-    # for EST for a start date of 1979/1/1,  the first available date
-    # should be 1979/1/1 19:00
-
-    missing = {}
-
-    for missing_date in missing_dates:
-        if missing_date >= first_nldas_date:
-            missing[missing_date] = nldas_data[missing_date]
-
-    return first_nldas_date, missing
 
 
 def get_corresponding_gldas(missing_dates, gldas_data):
@@ -149,7 +135,7 @@ def get_corresponding_gldas(missing_dates, gldas_data):
     return first_gldas_date, missing
 
 
-def fill_data(missing, coop_data, first_nldas_date):
+def fill_data(missing, coop_data, first_ldas_date):
 
     filled_data = []
     for x in coop_data:
@@ -160,12 +146,11 @@ def fill_data(missing, coop_data, first_nldas_date):
             local_date = datetime.datetime(
                 int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
 
-        if local_date >= first_nldas_date:
+        if local_date >= first_ldas_date:
             if x[-1] == '-9999':
-
-                nldas_precip = missing[local_date]
+                ldas_precip = missing[local_date]
                 local_thing = x[0:-1]
-                local_thing.append(nldas_precip)
+                local_thing.append(ldas_precip)
                 filled_data.append(local_thing)
             else:
                 filled_data.append(x)
@@ -237,7 +222,7 @@ def nldas_routine(coop_filename, station):
     coop_missing_dates = common_fill.get_missing_dates(
         coop_precip_data, '-9999')
 
-    first_missing_date, missing_dict = get_corresponding_nldas(
+    first_missing_date, missing_dict = common_fill.get_corresponding_nldas(
         coop_missing_dates, adjusted_nldas_data)
 
     filled_coop_data = fill_data(
