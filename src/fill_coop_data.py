@@ -17,20 +17,6 @@ def adjust_dates(nldas, utc):
     return nldas_dict
 
 
-def get_dict(input_dict):
-    output_dict = {}
-    for x in input_dict:
-        try:
-            local_date = datetime.datetime(
-                int(x[1]), int(x[2]), int(x[3]), int(x[4]))
-        except ValueError:
-            local_date = datetime.datetime(
-                int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
-        output_dict[local_date] = float(x[-1])
-
-    return output_dict
-
-
 def get_offset(item):
     station_inv_file = os.path.join(
         'src', 'HPD_v02r02_stationinv_c20200909.csv')
