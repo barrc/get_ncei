@@ -39,6 +39,9 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
 
     gldas_21_start_date = datetime.datetime(2000, 1, 1)
 
+    # pad end_date to avoid issues with timezone conversion
+    end_date_delta = datetime.timedelta(days=2)
+
     gldas_20 = 'GLDAS2:GLDAS_NOAH025_3H_v2.0:'
     gldas_21 = 'GLDAS2:GLDAS_NOAH025_3H_v2.1:'
 
@@ -57,15 +60,13 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
                 if end_date > gldas_21_start_date:
                     end_date_str = '2000-01-01T00'
                 else:
-                    # pad end_date to avoid issues with timezone conversion
-                    end_date_delta = datetime.timedelta(days=2)
                     end_date_str = f'{end_date + end_date_delta:%Y-%m-%dT00}'
             elif condition[-4:-1] == '2.1':
                 if start_date > gldas_21_start_date:
                     start_date_str = f'{start_date:%Y-%m-%dT00}'
                 else:
                     start_date_str = '2000-01-01T00'
-                end_date_str = f'{end_date + datetime.timedelta(days=2):%Y-%m-%dT00}'
+                end_date_str = f'{end_date + end_date_delta:%Y-%m-%dT00}'
 
             precip_url = "https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/access/" \
                 + "timeseries.cgi?variable=" + condition \
