@@ -105,9 +105,10 @@ def adjust_dates(nldas, utc):
 def get_corresponding_nldas(missing_dates, nldas_data):
 
     first_nldas_date = list(nldas_data.items())[0][0]
-    # this will be approximately 1/1/1979, with a different hour depending
-    # on the UTC offset
-    # for EST, the first available date should be 1979/1/1 19:00
+    # this will be some number of hours after the start_date,
+    # with a different hour depending on the UTC offset
+    # for EST for a start date of 1979/1/1,  the first available date
+    # should be 1979/1/1 19:00
 
     missing = {}
 
