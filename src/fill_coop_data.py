@@ -98,18 +98,9 @@ def gldas_routine(coop_filename, station):
 if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop_stations_to_use.csv')
 
-    with open(os.path.join('src', 'coop_stations_to_use.csv'), 'r') as file:
-        data = file.readlines()
-
-    split_data = [item.strip('\n').split(',') for item in data]
-
-    header = split_data.pop(0)
-
-    for x in split_data:
-        for coop in coop_stations_to_use:
-            if coop.station_id == x[0]:
-                station_ = coop
-                offset = get_offset(station_)
+    for coop in coop_stations_to_use:
+        station_ = coop
+        offset = get_offset(station_)
 
         c_filename = os.path.join(
             common.DATA_BASE_DIR, 'processed_coop_data',
@@ -132,8 +123,6 @@ if __name__ == '__main__':
                     pass
                     # probably just an error on NLDAS side; try again later
 
-        if fill_type == 'gldas':
+        elif fill_type == 'gldas':
             gldas_routine(c_filename, station_)
-
-        exit()
 
