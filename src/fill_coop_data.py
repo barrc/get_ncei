@@ -68,8 +68,8 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
                     start_date_str = '2000-01-01T00'
                 end_date_str = f'{end_date + end_date_delta:%Y-%m-%dT00}'
 
-            precip_url = "https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/access/" \
-                + "timeseries.cgi?variable=" + condition \
+            precip_url = "https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/" \
+                + "access/timeseries.cgi?variable=" + condition \
                 + data_type + "&startDate=" + start_date_str \
                 + "&endDate=" + end_date_str \
                 + "&location=GEOM:POINT(" + lon + ",%20" + lat + ")" \
@@ -201,7 +201,8 @@ def get_corresponding_gldas(missing_dates, gldas_data):
                 if subtracted_date in gldas_keys:
                     missing[missing_date] = gldas_data[subtracted_date]
                 else:
-                    subtracted_date = missing_date - datetime.timedelta(hours=2)
+                    subtracted_date = missing_date - datetime.timedelta(
+                        hours=2)
                     if subtracted_date in gldas_keys:
                         missing[missing_date] = gldas_data[subtracted_date]
                     else:
@@ -273,10 +274,7 @@ def nldas_routine(coop_filename, station):
 
     raw_nldas_data = get_nldas_data(
         'APCPsfc', start_date_str, end_date_str, x_grid, y_grid)
-    # try:
     nldas_precip_data = process_nldas_data(raw_nldas_data)
-    # except ValueError:
-        # print(station.station_id)
 
     # data returned is in UTC
     # for COOP, adjust this by utc_offset
@@ -290,7 +288,8 @@ def nldas_routine(coop_filename, station):
     filled_coop_data = fill_data(
         missing_dict, coop_precip_data, first_missing_date)
 
-    out_file = os.path.join(common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
+    out_file = os.path.join(
+        common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
 
     with open(out_file, 'w') as file:
         for item in filled_coop_data:
@@ -335,7 +334,8 @@ def gldas_routine(coop_filename, station):
     filled_coop_data = fill_data(
         missing_dict, coop_precip_data, first_missing_date)
 
-    out_file = os.path.join(common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
+    out_file = os.path.join(
+        common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
 
     with open(out_file, 'w') as file:
         for item in filled_coop_data:
