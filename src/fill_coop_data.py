@@ -8,13 +8,13 @@ import common
 import common_fill
 
 
-def adjust_dates(nldas, utc):
-    nldas_dict = {}
-    for x in nldas:
+def adjust_dates(ldas, utc):
+    ldas_dict = {}
+    for x in ldas:
         adjusted_date = x + datetime.timedelta(hours=utc)
-        nldas_dict[adjusted_date] = nldas[x]
+        ldas_dict[adjusted_date] = ldas[x]
 
-    return nldas_dict
+    return ldas_dict
 
 
 def get_offset(item):
@@ -134,4 +134,6 @@ if __name__ == '__main__':
 
         if fill_type == 'gldas':
             gldas_routine(c_filename, station_)
+
+        exit()
 
