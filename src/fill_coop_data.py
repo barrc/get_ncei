@@ -131,6 +131,7 @@ def process_gldas_data(data):
 
     return nldas_dict
 
+
 def read_data(filename):
 
     with open(filename, 'r') as file:
@@ -179,6 +180,7 @@ def get_corresponding_nldas(missing_dates, nldas_data):
 
     return first_nldas_date, missing
 
+
 def get_corresponding_gldas(missing_dates, gldas_data):
 
     first_gldas_date = list(gldas_data.items())[0][0]
@@ -204,7 +206,6 @@ def get_corresponding_gldas(missing_dates, gldas_data):
                         missing[missing_date] = gldas_data[subtracted_date]
                     else:
                         raise ValueError
-
 
     return first_gldas_date, missing
 
@@ -247,7 +248,6 @@ def get_dict(input_dict):
     return output_dict
 
 
-
 def get_offset(item):
     station_inv_file = os.path.join(
         'src', 'HPD_v02r02_stationinv_c20200909.csv')
@@ -260,6 +260,7 @@ def get_offset(item):
                 utc_offset = int(row[8])
 
     return utc_offset
+
 
 def nldas_routine(coop_filename, station):
     coop_precip_data = read_data(coop_filename)
@@ -306,6 +307,7 @@ def nldas_routine(coop_filename, station):
                 to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
                 file.write(to_file)
 
+
 def gldas_routine(coop_filename, station):
     coop_precip_data = read_data(coop_filename)
 
@@ -351,8 +353,6 @@ def gldas_routine(coop_filename, station):
                 file.write(to_file)
 
 
-
-
 if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop_stations_to_use.csv')
 
@@ -392,5 +392,3 @@ if __name__ == '__main__':
 
         elif fill_type == 'gldas':
             gldas_routine(c_filename, station_)
-
-
