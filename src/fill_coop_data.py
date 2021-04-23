@@ -263,6 +263,22 @@ def get_offset(item):
     return utc_offset
 
 
+def write_file(o_file, filled_coop_data):
+    with open(o_file, 'w') as file:
+        for item in filled_coop_data:
+            if type(item[6]) == str:
+                str_precip = item[6]
+            elif item[6] == 0:
+                str_precip = '0.0'
+            else:
+                str_precip = str(round(item[6], 3))
+
+            if str_precip == '0.0':
+                pass
+            else:
+                to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
+                file.write(to_file)
+
 def nldas_routine(coop_filename, station):
     coop_precip_data = read_data(coop_filename)
 
@@ -291,20 +307,7 @@ def nldas_routine(coop_filename, station):
     out_file = os.path.join(
         common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
 
-    with open(out_file, 'w') as file:
-        for item in filled_coop_data:
-            if type(item[6]) == str:
-                str_precip = item[6]
-            elif item[6] == 0:
-                str_precip = '0.0'
-            else:
-                str_precip = str(round(item[6], 3))
-
-            if str_precip == '0.0':
-                pass
-            else:
-                to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
-                file.write(to_file)
+    write_file(out_file, filled_coop_data)
 
 
 def gldas_routine(coop_filename, station):
@@ -337,20 +340,7 @@ def gldas_routine(coop_filename, station):
     out_file = os.path.join(
         common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat')
 
-    with open(out_file, 'w') as file:
-        for item in filled_coop_data:
-            if type(item[6]) == str:
-                str_precip = item[6]
-            elif item[6] == 0:
-                str_precip = '0.0'
-            else:
-                str_precip = str(round(item[6], 3))
-
-            if str_precip == '0.0':
-                pass
-            else:
-                to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
-                file.write(to_file)
+    write_file(out_data, filled_coop_data)
 
 
 if __name__ == '__main__':
