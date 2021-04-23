@@ -68,8 +68,6 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
                     start_date_str = '2000-01-01T00'
                 end_date_str = f'{end_date + datetime.timedelta(days=2):%Y-%m-%dT00}'
 
-                # start_date_str = '2000-01-01T00'
-                # end_date_str = '2007-01-01T00'
             precip_url = "https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/access/" \
                 + "timeseries.cgi?variable=" + condition \
                 + data_type + "&startDate=" + start_date_str \
@@ -81,7 +79,6 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
             data[index] = r.content
 
     return data
-
 
 
 def process_nldas_data(data):
