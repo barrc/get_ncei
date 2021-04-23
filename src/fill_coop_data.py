@@ -38,17 +38,7 @@ def get_nldas_data(data_type, start_date_str, end_date_str, x_str, y_str):
     return r.content
 
 
-def get_datetime_date(str_date):
-    split_date = str_date.split('-')
-    datetime_date = datetime.datetime(
-        int(split_date[0]), int(split_date[1]), int(split_date[2][0:2]),
-        int(split_date[2][-2:]))
-
-    return datetime_date
-
 def get_gldas_data(data_type, start_date, end_date, lat, lon):
-    # start_date = get_datetime_date(start_date_str)
-    # end_date = get_datetime_date(end_date_str)
 
     gldas_21_start_date = datetime.datetime(2000, 1, 1)
 
