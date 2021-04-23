@@ -135,29 +135,6 @@ def get_corresponding_gldas(missing_dates, gldas_data):
     return first_gldas_date, missing
 
 
-def fill_data(missing, coop_data, first_ldas_date):
-
-    filled_data = []
-    for x in coop_data:
-        try:
-            local_date = datetime.datetime(
-                int(x[1]), int(x[2]), int(x[3]), int(x[4]))
-        except ValueError:
-            local_date = datetime.datetime(
-                int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
-
-        if local_date >= first_ldas_date:
-            if x[-1] == '-9999':
-                ldas_precip = missing[local_date]
-                local_thing = x[0:-1]
-                local_thing.append(ldas_precip)
-                filled_data.append(local_thing)
-            else:
-                filled_data.append(x)
-
-    return filled_data
-
-
 def get_dict(input_dict):
     output_dict = {}
     for x in input_dict:
@@ -225,7 +202,7 @@ def nldas_routine(coop_filename, station):
     first_missing_date, missing_dict = common_fill.get_corresponding_nldas(
         coop_missing_dates, adjusted_nldas_data)
 
-    filled_coop_data = fill_data(
+    filled_coop_data = common_fill.fill_data(
         missing_dict, coop_precip_data, first_missing_date)
 
     out_file = os.path.join(
@@ -258,7 +235,7 @@ def gldas_routine(coop_filename, station):
     first_missing_date, missing_dict = get_corresponding_gldas(
         coop_missing_dates, adjusted_gldas_data)
 
-    filled_coop_data = fill_data(
+    filled_coop_data = common_fill.fill_data(
         missing_dict, coop_precip_data, first_missing_date)
 
     out_file = os.path.join(
