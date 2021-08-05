@@ -1,7 +1,11 @@
 import datetime
+import os
 
 import requests
 import numpy as np
+
+import common
+
 
 class NLDAS:
     DEGREES_PER_GRID_CELL = 1.0 / 8.0
@@ -12,6 +16,10 @@ class NLDAS:
 
 
     def grid_cell_from_lat_lon(lat, lon):
+        """
+        Takes latitude and longitude in degrees and returns
+        string of x/y NLDAS grid cell
+        """
         x = int(round((lon - NLDAS.WESTMOST_GRID_CENTER)
                     / NLDAS.DEGREES_PER_GRID_CELL))
         y = int(round((lat - NLDAS.SOUTHMOST_GRID_CENTER)
@@ -20,7 +28,9 @@ class NLDAS:
 
 
 def read_data(filename):
-
+    """
+    Reads precipitation data
+    """
     with open(filename, 'r') as file:
         precip_data = file.readlines()
 
@@ -28,6 +38,10 @@ def read_data(filename):
 
 
 def get_nldas_data(data_type, start_date_str, end_date_str, x_str, y_str):
+    """
+    Gets data from NLDAS
+    """
+
     precip_url = "https://hydro1.sci.gsfc.nasa.gov/daac-bin/access/" \
                   + "timeseries.cgi?variable=NLDAS:NLDAS_FORA0125_H.002:" \
                   + data_type + "&startDate=" + start_date_str \
@@ -37,6 +51,7 @@ def get_nldas_data(data_type, start_date_str, end_date_str, x_str, y_str):
     r = requests.get(precip_url)
 
     return r.content
+
 
 def get_gldas_data(data_type, start_date, end_date, lat, lon):
 
@@ -203,10 +218,10 @@ def get_corresponding_gldas(missing_dates, gldas_data):
     return first_gldas_date, missing
 
 
-def fill_data(missing, coop_data, first_ldas_date, missing_value):
+def fill_data(missing, raw_data, first_ldas_date, missing_value):
 
     filled_data = []
-    for x in coop_data:
+    for x in raw_data:
         try:
             local_date = datetime.datetime(
                 int(x[1]), int(x[2]), int(x[3]), int(x[4]))
@@ -225,9 +240,10 @@ def fill_data(missing, coop_data, first_ldas_date, missing_value):
 
     return filled_data
 
-def write_file(o_file, filled_coop_data):
+
+def write_file(o_file, filled_data):
     with open(o_file, 'w') as file:
-        for item in filled_coop_data:
+        for item in filled_data:
             if type(item[6]) == str:
                 str_precip = item[6]
             elif item[6] == 0:
@@ -240,6 +256,7 @@ def write_file(o_file, filled_coop_data):
             else:
                 to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
                 file.write(to_file)
+
 
 def get_ordered_pairs(station):
     latitude = np.arange(-59.875, 89.875, 0.25)
@@ -277,3 +294,101 @@ def get_ordered_pairs(station):
         ordered_lat_lons.append((grid_lat, grid_lon))
 
     return ordered_lat_lons
+
+
+def adjust_dates(ldas, utc):
+    # used for COOP stations only
+
+    ldas_dict = {}
+    for x in ldas:
+        adjusted_date = x + datetime.timedelta(hours=utc)
+        ldas_dict[adjusted_date] = ldas[x]
+
+    return ldas_dict
+
+def nldas_routine(filename, station, station_network, missing_value, offset=False):
+    # read precip data with missing values present
+    unfilled_precip_data = read_data(filename)
+
+    # get parameters for calling NLDAS
+    x_grid, y_grid = NLDAS.grid_cell_from_lat_lon(
+        float(station.latitude), float(station.longitude))
+    start_date_str = f'{station.start_date_to_use:%Y-%m-%dT24}'
+    end_date_str = f'{station.end_date_to_use + datetime.timedelta(days=1):%Y-%m-%dT24}'
+
+    # get and process corresponding NLDAS data
+    raw_nldas_data = get_nldas_data(
+        'APCPsfc', start_date_str, end_date_str, x_grid, y_grid)
+    nldas_precip_data = process_nldas_data(raw_nldas_data)
+
+    # data returned from NLDAS is in UTC
+    # for COOP, adjust this by utc_offset
+    if offset:
+        adjusted_nldas_data = adjust_dates(nldas_precip_data, offset)
+    else:
+        adjusted_nldas_data = nldas_precip_data
+
+    # find missing dates and corresponding NLDAS data
+    missing_dates = get_missing_dates(
+        unfilled_precip_data, missing_value)
+    first_missing_date, missing_dict = get_corresponding_nldas(
+        missing_dates, adjusted_nldas_data)
+
+    # fill data and write to file
+    filled_data = fill_data(
+        missing_dict, unfilled_precip_data, first_missing_date, missing_value)
+    out_file = os.path.join(
+        common.DATA_BASE_DIR, 'filled_' + station_network + '_data', station.station_id + '.dat')
+    write_file(out_file, filled_data)
+
+
+def gldas_routine(filename, station, station_network, missing_value, offset=False):
+    unfilled_precip_data = read_data(filename)
+
+    raw_gldas_data = get_gldas_data(
+        'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
+        str(station.latitude), str(station.longitude))
+
+    try:
+        gldas_precip_data = process_gldas_data(raw_gldas_data)
+    except ValueError:
+        print(station.station_id)
+
+    if gldas_precip_data:
+        gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
+
+    else:
+        # try GLDAS routine with next-nearest grid cell
+        pairs_to_try = get_ordered_pairs(station)
+        for a_pair in pairs_to_try:
+            raw_gldas_data = get_gldas_data(
+                'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
+                str(a_pair[0]), str(a_pair[1]))
+
+            gldas_precip_data = process_gldas_data(raw_gldas_data)
+            if gldas_precip_data:
+                gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
+                return
+
+
+def gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset=False):
+
+    no_gldas_date = datetime.datetime(2020, 1, 1, 0, 0)
+    if no_gldas_date not in list(gldas_precip_data.keys()):
+        gldas_precip_data[no_gldas_date] = 0.0
+
+    adjusted_gldas_data = adjust_dates(gldas_precip_data, offset)
+    missing_dates = get_missing_dates(
+        unfilled_precip_data, missing_value)
+
+    first_missing_date, missing_dict = get_corresponding_gldas(
+        missing_dates, adjusted_gldas_data)
+
+    filled_data = fill_data(
+        missing_dict, unfilled_precip_data, first_missing_date, missing_value)
+
+    out_file = os.path.join(
+        common.DATA_BASE_DIR, 'filled_' + station_network + '_data', station.station_id + '.dat')
+
+    write_file(out_file, filled_data)
+
