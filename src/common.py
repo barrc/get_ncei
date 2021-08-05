@@ -3,6 +3,8 @@ import datetime
 import os
 from dataclasses import dataclass
 
+import requests
+
 CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
 
 # plan is to keep this date at 1990
@@ -69,6 +71,27 @@ class Station:
     #         return self.end_date
 
 
+def get_start_date_to_use(station):
+    if station.start_date <= EARLIEST_START_DATE:
+        start_date = EARLIEST_START_DATE
+    elif station.start_date.month == 1 and station.start_date.day == 1:
+        start_date = station.start_date
+    else:
+        start_date = datetime.datetime(station.start_date.year + 1, 1, 1)
+
+    return start_date
+
+
+def get_end_date_to_use(station):
+    if station.end_date.month == 12 and station.end_date.day == 31:
+        end_date = station.end_date
+    else:
+        end_date = datetime.datetime(station.end_date.year - 1, 12, 31)
+
+    return end_date
+
+
+
 def make_date(input_date):
     return datetime.datetime(int(input_date[0:4]),
                              int(input_date[4:6]),
@@ -118,7 +141,7 @@ def str_date_to_datetime(str_date):
 
 def get_stations(short_filename):
     stations = []
-    filename = os.path.join('src', short_filename)
+    filename = os.path.join(os.getcwd(), short_filename)
 
     with open(filename, 'r') as file:
         coop_reader = csv.reader(file)
@@ -180,3 +203,5 @@ def get_date_dict(value, first_date, last_date):
         date_list.append(iterate_date)
 
     return {key:value for key in date_list}
+
+

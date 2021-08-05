@@ -1,7 +1,7 @@
 import datetime
 
 import requests
-
+import numpy as np
 
 class NLDAS:
     DEGREES_PER_GRID_CELL = 1.0 / 8.0
@@ -78,6 +78,8 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
                 + "&location=GEOM:POINT(" + lon + ",%20" + lat + ")" \
                 + "&type=asc2"
 
+            print(precip_url)
+
             r = requests.get(precip_url)
             data[index] = r.content
 
@@ -126,7 +128,10 @@ def process_gldas_data(data):
                     local_date = datetime.datetime(
                                     int(ymd[0]), int(ymd[1]), int(ymd[2][0:2]),
                                     int(ymd[2][3:5]))
-                    gldas_dict[local_date] = float(date_time_data[1])/25.4*3600
+                    if date_time_data[1] == '-9999':
+                        pass
+                    else:
+                        gldas_dict[local_date] = float(date_time_data[1])/25.4*3600
                 else:
                     meta_item = ls.split('=')
                     if len(meta_item) == 2:
@@ -198,7 +203,7 @@ def get_corresponding_gldas(missing_dates, gldas_data):
     return first_gldas_date, missing
 
 
-def fill_data(missing, coop_data, first_ldas_date):
+def fill_data(missing, coop_data, first_ldas_date, missing_value):
 
     filled_data = []
     for x in coop_data:
@@ -210,7 +215,7 @@ def fill_data(missing, coop_data, first_ldas_date):
                 int(x[1]), int(x[2]), int(x[3])) + datetime.timedelta(days=1)
 
         if local_date >= first_ldas_date:
-            if x[-1] == '-9999':
+            if x[-1] == missing_value:
                 ldas_precip = missing[local_date]
                 local_thing = x[0:-1]
                 local_thing.append(ldas_precip)
@@ -235,3 +240,40 @@ def write_file(o_file, filled_coop_data):
             else:
                 to_file = f'{item[0]}\t{item[1]}\t{item[2]}\t{item[3]}\t{item[4]}\t{item[5]}\t{str_precip}\n'
                 file.write(to_file)
+
+def get_ordered_pairs(station):
+    latitude = np.arange(-59.875, 89.875, 0.25)
+    longitude = np.arange(-179.875, 179.875, 0.25)
+
+    lats, lons = np.meshgrid(latitude, longitude)
+
+    stn_lat = float(station.latitude)
+    stn_lon = float(station.longitude)
+
+    abs_lat = np.abs(lats-stn_lat)
+    abs_lon = np.abs(lons-stn_lon)
+
+    c = np.maximum(abs_lon, abs_lat)
+
+    x, y = np.where(c == np.min(c))
+    grid_lat = lats[x[0], y[0]]
+    grid_lon = lons[x[0], y[0]]
+
+    test = np.sort(c, axis=None)[:1000]
+
+    pairs = []
+    for a in test:
+        x_index, y_index = np.where(c == a)
+        for (x_, y_) in zip(x_index, y_index):
+            if (x_, y_) not in pairs:
+                pairs.append((x_, y_))
+
+    ordered_lat_lons = []
+    for pair in pairs:
+
+        grid_lat = lats[0, pair[1]]
+        grid_lon = lons[pair[0], 0]
+
+        ordered_lat_lons.append((grid_lat, grid_lon))
+
+    return ordered_lat_lons
