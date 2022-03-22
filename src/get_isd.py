@@ -25,13 +25,16 @@ import get_isd_stations
 
 # "01,0000,9,5"
 
-def get_raw_data(isd_station, start_date, end_date):
+def get_raw_data(isd_station, start_date, end_date, old=False):
     start_date_string = f"{start_date.year:04d}-{start_date.month:02d}-{start_date.day:02d}"
     end_date_string = f"{end_date.year:04d}-{end_date.month:02d}-{end_date.day:02d}"
 
     url = 'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&' + \
         'dataTypes=AA1&stations=' + isd_station + '&startDate=' + start_date_string + \
         '&endDate=' + end_date_string + '&format=json&options=includeAttributes:false'
+
+    print(url)
+    exit()
 
     r = requests.get(url)
 
@@ -40,14 +43,22 @@ def get_raw_data(isd_station, start_date, end_date):
     except json.decoder.JSONDecodeError:
         stuff = json.loads(r.content.decode() + ']')
 
-    raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '.json')
+    if old:
+        raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '_old.json')
+    else:
+        raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '.json')
     out_json = json.dumps(stuff)
     with open(raw_filename, 'w') as file:
         file.write(out_json)
 
 
-def get_dates(station_id):
-    with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
+def get_dates(station_id, old=False):
+    if old:
+        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '_old.json')
+    else:
+        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json')
+
+    with open(filename, 'r') as file:
         data = json.load(file)
 
     first_date = None
@@ -80,13 +91,19 @@ def get_dates(station_id):
 
 
 
-def read_raw(station):
+def read_raw(station, first_date, last_date, old=False):
+    # TODO first_date and last_date
 
-    first_date = station.start_date_to_use
-    last_date = station.end_date_to_use
+    # first_date = station.start_date_to_use
+    # last_date = station.end_date_to_use
     station_id = station.station_id
 
-    with open(os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json'), 'r') as file:
+    if old:
+        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '_old.json')
+    else:
+        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json')
+
+    with open(filename, 'r') as file:
         data = json.load(file)
 
     date_dict = common.get_date_dict('9999', first_date, last_date)
@@ -124,7 +141,12 @@ def read_raw(station):
         except KeyError:
             pass
 
-    with open(os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '.dat'), 'w') as file:
+    if old:
+        out_filename = os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '_old.dat')
+    else:
+        os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '.dat')
+
+    with open(out_filename, 'w') as file:
 
         to_file = ''
         for key, value in date_dict.items():

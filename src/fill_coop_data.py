@@ -24,6 +24,9 @@ def get_offset(item):
 
 if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop_stations_to_use.csv')
+    test_station_id = 'USC00514778'
+    coop_stations_to_use = [ x for x in coop_stations_to_use if x.station_id == test_station_id]
+    print(test_station_id)
 
     for station_ in coop_stations_to_use:
         offset = get_offset(station_)

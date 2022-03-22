@@ -54,6 +54,11 @@ def get_nldas_data(data_type, start_date_str, end_date_str, x_str, y_str):
 
 
 def get_gldas_data(data_type, start_date, end_date, lat, lon):
+    """
+    There are two GLDAS datasets, 2.0 and 2.1
+    GLDAS 2.1 starts on 1/1/2000
+    Get older data from pre GLDAS 2.0, then newer data from GLDAS 2.1
+    """
 
     gldas_21_start_date = datetime.datetime(2000, 1, 1)
 
@@ -92,8 +97,6 @@ def get_gldas_data(data_type, start_date, end_date, lat, lon):
                 + "&endDate=" + end_date_str \
                 + "&location=GEOM:POINT(" + lon + ",%20" + lat + ")" \
                 + "&type=asc2"
-
-            print(precip_url)
 
             r = requests.get(precip_url)
             data[index] = r.content
@@ -352,7 +355,7 @@ def gldas_routine(filename, station, station_network, missing_value, offset=Fals
     try:
         gldas_precip_data = process_gldas_data(raw_gldas_data)
     except ValueError:
-        print(station.station_id)
+        gldas_precip_data = None
 
     if gldas_precip_data:
         gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
@@ -361,11 +364,16 @@ def gldas_routine(filename, station, station_network, missing_value, offset=Fals
         # try GLDAS routine with next-nearest grid cell
         pairs_to_try = get_ordered_pairs(station)
         for a_pair in pairs_to_try:
+
             raw_gldas_data = get_gldas_data(
                 'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
                 str(a_pair[0]), str(a_pair[1]))
 
-            gldas_precip_data = process_gldas_data(raw_gldas_data)
+            try:
+                gldas_precip_data = process_gldas_data(raw_gldas_data)
+            except ValueError:
+                gldas_precip_data = None
+
             if gldas_precip_data:
                 gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
                 return

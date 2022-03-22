@@ -14,15 +14,29 @@ BASEDIR = os.path.join(os.getcwd(), 'src')
 
 
 def download_file():
+    """
+    Downloads the station inventory file for ISD from NOAA
+
+    The station inventory file is updated on an irregular schedule,
+    Confirms the status_code is 200
+    Writes the station inventory file to the src/ directory
+    """
     out_file = os.path.join(BASEDIR, 'isd-history.txt')
 
     r = requests.get('http://www1.ncdc.noaa.gov/pub/data/noaa/isd-history.txt')
+
+    assert r.status_code == 200
 
     with open(out_file, 'wb') as file:
         file.write(r.content)
 
 
 def read_file():
+    """
+    Reads the ISD station inventory file
+
+    Returns a list of tuples representing each entry in file
+    """
 
     with open(os.path.join(BASEDIR, 'isd-history.txt'), 'r',
               encoding='utf-8') as file:
@@ -33,7 +47,7 @@ def read_file():
 
     isd_data = []
     for item in data[22:]:
-        # usaf is not a unique identifier
+        # neither USAF or WBAN are unique identifiers
         usaf = item[0:6]
         wban = item[7:12]
         station_name = item[13:42]
@@ -66,8 +80,35 @@ def parse_isd_data(isd_data):
                     item[9] + ',' + item[10] + '\n'
                 file.write(string_to_write)
 
+def assign_in_basins_attribute(basins, isds, codes):
+    """
+    Assigns in_basins attribute
 
-def look_at_isd_files(wban_basins_mapping):
+    Iterates through all ISD stations and determine if the station_id
+    matches a station_id in the BASINS dataset using the
+    WBAN codes from the HOMR API
+
+    Returns list of ISD stations with in_basins and
+    break_with_basins attributes assigned
+    """
+
+    # basins_ids = [item.station_id for item in basins]
+
+    for isd in isds:
+        if isd.station_id[-5:] in codes:
+            isd.in_basins = True
+            for x in basins:
+                if codes[isd.station_id[-5:]] == x.station_id:
+                    if isd.start_date > x.end_date:
+                        isd.break_with_basins = True
+
+    # Can't do dates here as we do for COOP here because some stations
+    # have ID changes and will need to be combined
+
+    return isds
+
+
+def look_at_isd_files(wban_basins_mapping, basins_stations):
 
     stations = []
 
@@ -102,54 +143,68 @@ def look_at_isd_files(wban_basins_mapping):
         else:
             stations_first_pass.append(station)
 
-    counter = 0
-    those = 0
-    stations = []
-    for item in stations_first_pass:
-        if item.station_id[-5:] in wban_basins_mapping:
-            for x in basins_stations:
-                if x.station_id == wban_basins_mapping[item.station_id[-5:]]:
-                    # 1. If a station is in BASINS and is current, use the station
-                    if item.end_date >= common.CUTOFF_END_DATE:
-                        item.in_basins = True
-                        stations.append(item)
-                    # 2. If a station is in BASINS and is not current, but there is no gap
-                    #    between the BASINS end date and the ISD start date, use the
-                    #    station as long as there is new data
-                    elif item.start_date <= x.end_date and item.end_date >= x.end_date  \
-                        and (item.end_date - x.end_date).days >= 365:
-                        # example -- 70267526484, BASINS ID 507097
-                        item.in_basins = True
-                        stations.append(item)
-                    # 3. If a stations is in BASINS and there is a gap between the BASINS
-                    #    end date and the ISD start date, only use the station if there
-                    #    are at least 10 years of data from ISD
-                    else:
-                        if item.end_date >= x.end_date:
-                            item.in_basins = True
-                            item.break_with_basins = True
-                            if relativedelta(item.end_date, item.start_date).years >= 10:
-                                stations.append(item)
+    print('\n')
 
-            those += 1
+    # For ISD, we can definitively rule some stations out.
+    # We cannot conclusively determine that we will be able to use a station
+    # until we have obtained and parsed the precipitation data.
+    # Start and end dates can be misleading, some stations have no
+    # precipitation data, and some stations have very high percent missing.
+    # But we do want to rule stations out first according to our rules.
+
+    # First assign in_basins and break_with_basins
+    isd_stations = assign_in_basins_attribute(basins, stations_first_pass, wban_basins_mapping)
+
+
+    # 2. If a station is in BASINS and there is no gap between the BASINS
+    #    end date and the C-HPD v2 start date, use the station as long as
+    #    there is new data
+    # 3. If a stations is in BASINS and there is a gap between the BASINS
+    #    end date and the C-HPD v2 start date, only use the station if there
+    #    are at least 10 years of data from C-HPD v2
+
+    # approximately 10 years
+    ten_years = datetime.timedelta(days=3650)
+
+    data = []
+    for isd in isd_stations:
+
+        # 1. If a station is not in BASINS, use the station if it has at least
+        # 10 consecutive years of data since 1990
+        if not isd.in_basins:
+            # Rule 1
+            if isd.end_date - ten_years >= common.EARLIEST_START_DATE:
+                if isd.end_date - isd.start_date >= ten_years:
+                    data.append(isd)
         else:
-            # 4. If a station is not in BASINS, use the station if it has at least
-            # 10 consecutive years of data since 1990
-            if relativedelta(item.end_date, item.start_date).years >= 10:
-                if relativedelta(item.end_date, common.EARLIEST_START_DATE).years >= 10:
-                    stations.append(item)
-                    counter += 1
-    print(those)
-    print(counter)
+            if not isd.break_with_basins:
+                # Rule 2
 
-    filename = os.path.join('src', 'isd_stations_to_use.csv')
+                basins_station = [
+                    x for x in basins_stations if x.station_id ==
+                    wban_basins_mapping[isd.station_id[-5:]]][0]
+
+                if isd.end_date <= basins_station.end_date:
+                    pass
+                elif isd.end_date > isd.start_date:
+                    data.append(isd)
+            else:
+                # Rule 3
+                if isd.end_date - isd.start_date >= ten_years:
+                    data.append(isd)
+
+                #
+        if isd.start_date <= common.EARLIEST_START_DATE:
+            isd.start_date = common.EARLIEST_START_DATE
+
+    filename = os.path.join('src', 'isd_stations_to_try.csv')
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(asdict(stations[0]).keys())
-        for item in stations:
+        for item in data:
             writer.writerow(asdict(item).values())
 
-    return stations_first_pass
+    return data
 
 
 def check_years(coops):
@@ -165,13 +220,15 @@ def read_homr_codes():
 
     split_data = [item.strip('\n').split(',') for item in data]
 
-    stuff = {}
+    codes_dict = {}
+    # make dict where key is WBAN and value is corresponding BASINS station
+    # ignore USAF because not unique identifier (no last digit)
     for item in split_data:
         codes = item[1:-1]
         if codes[1] != 'None':
-            stuff[codes[1]] = item[0]
+            codes_dict[codes[1]] = item[0]
 
-    return stuff
+    return codes_dict
 
 
 def read_isd_inventory(station):
@@ -197,24 +254,27 @@ if __name__ == '__main__':
     wban_basins = read_homr_codes()
 
     # download_file()
-    # out_isd_data = read_file()
-    # parse_isd_data(out_isd_data)
+    out_isd_data = read_file()
+    parse_isd_data(out_isd_data)
 
-    chpd_stations = common.get_stations('coop')
+    # chpd_stations = common.get_stations('coop')
 
     split_basins_data = common.read_basins_file()
-    basins_stations = common.make_basins_stations(split_basins_data)
+    basins = common.make_basins_stations(split_basins_data)
 
-    isd_stations = look_at_isd_files(wban_basins)
+    isd_stations = look_at_isd_files(wban_basins, basins)
     # print(isd_stations)
     # check_years(isd_stations)
 
+
+
+
     # test = '72436313803'
     # test = '72219013874'
-    test = '99816999999'
-    for item in isd_stations:
-        if item.station_id == test:
-            a_station = item
+    # test = '99816999999'
+    # for item in isd_stations:
+    #     if item.station_id == test:
+    #         a_station = item
 
-    read_isd_inventory(a_station)
+    # read_isd_inventory(a_station)
 

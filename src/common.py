@@ -111,7 +111,7 @@ def read_basins_file():
     Returns a list of Station objects representing each entry in file
     """
 
-    basins_file = os.path.join(os.getcwd(), 'src', 'D4EMLite_PREC_Details.txt')
+    basins_file = os.path.join(os.getcwd(), 'D4EMLite_PREC_Details.txt')
 
     with open(basins_file, 'r') as file:
         data = file.readlines()
