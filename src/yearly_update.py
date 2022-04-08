@@ -11,29 +11,29 @@ import common_fill
 import get_isd_stations
 
 
-def get_updated_coops(initial_coop_stations, new_coop_stations):
-    initial_coop_ids = [x.station_id for x in initial_coop_stations]
-    updated_coop_stations = []
+def get_updated_station(initial_stations, new_stations):
+    initial_ids = [x.station_id for x in initial_stations]
+    updated_stations = []
     counter = 0
-    for new_coop_station in new_coop_stations:
-        new_coop_station.start_date_to_use = common.get_start_date_to_use(new_coop_station)
-        new_coop_station.end_date_to_use = common.get_end_date_to_use(new_coop_station)
+    for new_station in new_stations:
+        new_station.start_date_to_use = common.get_start_date_to_use(new_station)
+        new_station.end_date_to_use = common.get_end_date_to_use(new_station)
 
-        if new_coop_station.station_id in initial_coop_ids:
-            matching_station = [x for x in initial_coop_stations if x.station_id == new_coop_station.station_id][0]
-            if new_coop_station.end_date_to_use == matching_station.end_date_to_use: # then there is no new data to get
+        if new_station.station_id in initial_ids:
+            matching_station = [x for x in initial_stations if x.station_id == new_station.station_id][0]
+            if new_station.end_date_to_use == matching_station.end_date_to_use: # then there is no new data to get
                 counter += 1
-                updated_coop_stations.append(new_coop_station)
+                updated_stations.append(new_station)
             else:
                 # there may be new data
-                if new_coop_station.end_date_to_use.year > matching_station.end_date_to_use.year:
-                    updated_coop_stations.append(new_coop_station)
+                if new_station.end_date_to_use.year > matching_station.end_date_to_use.year:
+                    updated_stations.append(new_station)
         else:
-            if new_coop_station.start_date_to_use >= common.EARLIEST_START_DATE:
-                if new_coop_station.end_date_to_use - new_coop_station.start_date_to_use >= common.TEN_YEARS:
-                    updated_coop_stations.append(new_coop_station)
+            if new_station.start_date_to_use >= common.EARLIEST_START_DATE:
+                if new_station.end_date_to_use - new_station.start_date_to_use >= common.TEN_YEARS:
+                    updated_stations.append(new_station)
 
-    return updated_coop_stations
+    return updated_stations
 
 def combine_old_new(station, match, year):
     if match:
@@ -188,6 +188,8 @@ def update_isd_data():
         # first one, twenty nine palms. didn't work last time. try again?
         try:
             matching_station = [x for x in initial_isds if x.station_id == y.station_id][0]
+            y.start_date_to_use = matching_station.end_date_to_use + datetime.timedelta(days=1)
+
             print('!!')
 
         except:
