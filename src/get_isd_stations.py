@@ -13,7 +13,7 @@ import common
 BASEDIR = os.path.join(os.getcwd(), 'src')
 
 
-def download_file():
+def download_file(year=None):
     """
     Downloads the station inventory file for ISD from NOAA
 
@@ -21,7 +21,10 @@ def download_file():
     Confirms the status_code is 200
     Writes the station inventory file to the src/ directory
     """
-    out_file = os.path.join(BASEDIR, 'isd-history.txt')
+    if year:
+        out_file = os.path.join(BASEDIR, 'isd-history_' + str(year) + '.txt')
+    else:
+        out_file = os.path.join(BASEDIR, 'isd-history.txt')
 
     r = requests.get('http://www1.ncdc.noaa.gov/pub/data/noaa/isd-history.txt')
 
@@ -31,14 +34,18 @@ def download_file():
         file.write(r.content)
 
 
-def read_file():
+def read_file(year=None):
     """
     Reads the ISD station inventory file
 
     Returns a list of tuples representing each entry in file
     """
+    if year:
+        history_file = os.path.join(BASEDIR, 'isd-history_' + str(year) + '.txt')
+    else:
+        history_file = os.path.join(BASEDIR, 'isd-history.txt')
 
-    with open(os.path.join(BASEDIR, 'isd-history.txt'), 'r',
+    with open(history_file, 'r',
               encoding='utf-8') as file:
         data = file.readlines()
 
@@ -68,10 +75,13 @@ def read_file():
     return isd_data
 
 
-def parse_isd_data(isd_data):
+def parse_isd_data(isd_data, year=None):
+    if year:
+        parsed_history_file = os.path.join(BASEDIR, 'parsed_isd_history_' + str(year) + '.csv')
+    else:
+        parsed_history_file = os.path.join(BASEDIR, 'parsed_isd_history.csv')
 
-    with open(os.path.join(BASEDIR, 'parsed_isd_history.csv'), 'w',
-              encoding='utf-8') as file:
+    with open(parsed_history_file, 'w', encoding='utf-8') as file:
         for item in isd_data:
             if 'US' in item[3]:
                 string_to_write = item[0] + ',' + item[1] + ',' + item[2].rstrip() + ',' + \
@@ -108,11 +118,15 @@ def assign_in_basins_attribute(basins, isds, codes):
     return isds
 
 
-def look_at_isd_files(wban_basins_mapping, basins_stations):
+def look_at_isd_files(wban_basins_mapping, basins_stations, year=None):
 
     stations = []
 
-    csv_filename = os.path.join(BASEDIR, 'parsed_isd_history.csv')
+    if year:
+        csv_filename = os.path.join(BASEDIR, 'parsed_isd_history_' + str(year) + '.csv')
+    else:
+        csv_filename = os.path.join(BASEDIR, 'parsed_isd_history.csv')
+
     with open(csv_filename, 'r') as csv_file:
         station_inv_reader = csv.reader(csv_file)
         for row in station_inv_reader:

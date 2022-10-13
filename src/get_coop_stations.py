@@ -30,7 +30,7 @@ def download_station_inventory_file():
     r_file = requests.get(station_inv_base_url + filename)
     assert r_file.status_code == 200
 
-    station_inv_file = os.path.join('src', filename)
+    station_inv_file = os.path.join(filename)
 
     with open(station_inv_file, 'wb') as file:
         file.write(r_file.content)
@@ -66,7 +66,6 @@ def make_decimal(num):
 
 
 def check_lat_lon(basins, coops):
-    # TODO docstring
     basins_ids = [item.station_id for item in basins]
 
     mismatched = 0
@@ -144,14 +143,11 @@ def get_coop_stations_to_use(coops):
     """
     data = []
 
-    # approximately 10 years
-    ten_years = datetime.timedelta(days=3650)
-
     for item in coops:
         if not item.in_basins:
             # Rule 1
             if item.start_date_to_use >= common.EARLIEST_START_DATE:
-                if item.end_date_to_use - item.start_date_to_use >= ten_years:
+                if item.end_date_to_use - item.start_date_to_use >= common.TEN_YEARS:
                    data.append(item)
         else:
             if not item.break_with_basins:
@@ -160,7 +156,7 @@ def get_coop_stations_to_use(coops):
                     data.append(item)
             else:
                 # Rule 3
-                if item.end_date_to_use - item.start_date_to_use >= ten_years:
+                if item.end_date_to_use - item.start_date_to_use >= common.TEN_YEARS:
                     data.append(item)
 
     return data

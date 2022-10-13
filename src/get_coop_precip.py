@@ -16,7 +16,7 @@ def get_data(station):
 
     r = requests.get(the_url)
 
-    out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
+    out_file = os.path.join(common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_raw_coop_data', station.station_id + '.csv')
     with open(out_file, 'wb') as file:
         file.write(r.content)
 
@@ -49,8 +49,6 @@ def get_line(k, v, station_id):
         else:
             to_file += '  '
         if v == '-9999':
-            # FORNOW -- eventually might fill here instead of
-            # writing -9999 to file
             to_file += v
         else:
             to_file += f'{v/100:.3f}'
@@ -61,10 +59,7 @@ def get_line(k, v, station_id):
 
 def check_last_records(val):
     partial = 0
-    # check last records  TODO what was the_value[-5] ??
-    # print(val[-5])
     assert val[-4] == ' '
-    # TODO how to handle partial?
     if val[-3] != ' ':  # 'P' is for partial
         partial += 1
     assert val[-2] == ' '
@@ -72,9 +67,16 @@ def check_last_records(val):
 
 
 def process_data(station, start_date, end_date, old=False):
-    out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
-    with open(out_file, 'rb') as file:
-        data = file.readlines()
+    if old:
+        out_file = os.path.join(common.DATA_BASE_DIR, 'raw_coop_data', station.station_id + '.csv')
+    else:
+        out_file = os.path.join(common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_raw_coop_data', station.station_id + '.csv')
+
+    data = []
+    with open(out_file, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            data.append(row)
 
     header = data.pop(0)
 
@@ -87,17 +89,21 @@ def process_data(station, start_date, end_date, old=False):
 
     date_dict = common.get_date_dict('-9999', start_date, end_date)
     for item in data:
-        split_item = item.split(b',')
-        raw_date = split_item[4].decode().split('-')
+        if 'NAME' in header:
+            raw_date = item[5].split('-')
+        else:
+            # old format below
+            # split_item = item.split(b',')
+            raw_date = item[4].split('-')
+
         actual_date = datetime.datetime(int(raw_date[0]), int(raw_date[1]),
                                         int(raw_date[2]))
 
-        if actual_date.year == 1994:
-            print('debug')
-
         if actual_date >= start_date and actual_date <= end_date:
-            the_value = item.decode().strip('\n').split(',')
-            # TODO check flags
+
+            # old format below
+            # the_value = item.decode().strip('\n').split(',')
+            the_value = item
 
             measurement_flag_values = the_value[7:-5:5]
             try:
@@ -122,10 +128,7 @@ def process_data(station, start_date, end_date, old=False):
 
             counter = 0
             for value in float_precip:
-                # TODO ASSIGN TO DATE_DICT
                 date_dict[actual_date] = value
-                # to_file += get_line(value, counter, actual_date, station.station_id)
-                # counter += 1
                 actual_date = actual_date + datetime.timedelta(hours=1)
 
     for key, value in date_dict.items():
@@ -140,17 +143,12 @@ def process_data(station, start_date, end_date, old=False):
 
     missing_percent = missing/counter*100
 
-    if old:
-        out_file = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', station.station_id + '_old.dat')
-    else:
-        out_file = os.path.join(common.DATA_BASE_DIR, 'processed_coop_data', station.station_id + '.dat')
+    out_file = os.path.join(
+        common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_processed_coop_data', station.station_id + '.dat')
 
     with open(out_file, 'w') as file:
         file.write(to_file)
 
-    # with open('coop_percent_missing.csv', 'a') as missing_file:
-    #     missing_str = f'{station.station_id},{missing_percent:2f}\n'
-    #     missing_file.write(missing_str)
 
 
 def date_and_cumsum(data, year):

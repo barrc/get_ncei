@@ -60,7 +60,6 @@ def combine_isd(station, b_id, b_start_date):
     else:
         b_start_year = int(b_start_date.split('/')[0].strip("'"))
 
-    # what do we do now?
     both_data = []
     for x in basins_data[0]:
         if int(x[1]) >= common.EARLIEST_START_DATE.year and int(x[1]) >= b_start_year:
@@ -124,20 +123,20 @@ def write_file(o_file, combined_data):
 
 if __name__ == '__main__':
     coop_stations_to_use = common.get_stations('coop_stations_to_use.csv')
-    isd_stations_to_use = common.get_stations('isd_herewegoagain.csv')
+    isd_stations_to_use = common.get_stations('isd_subset.csv')
 
-    # for station in coop_stations_to_use:
-    #     filename = os.path.join(common.DATA_BASE_DIR, 'combined_data', station.station_id + '.dat')
-    #     if station.in_basins and not station.break_with_basins:
-    #         the_data = combine_coop(station)
-    #         if the_data:
-    #             write_file(filename, the_data)
-    #         else:
-    #             shutil.copyfile(os.path.join(
-    #                 common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat'), filename)
-    #     else:
-    #         shutil.copyfile(os.path.join(
-    #             common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat'), filename)
+    for station in coop_stations_to_use:
+        filename = os.path.join(common.DATA_BASE_DIR, 'combined_data', station.station_id + '.dat')
+        if station.in_basins and not station.break_with_basins:
+            the_data = combine_coop(station)
+            if the_data:
+                write_file(filename, the_data)
+            else:
+                shutil.copyfile(os.path.join(
+                    common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat'), filename)
+        else:
+            shutil.copyfile(os.path.join(
+                common.DATA_BASE_DIR, 'filled_coop_data', station.station_id + '.dat'), filename)
 
 
     wban_basins_mapping = get_isd_stations.read_homr_codes()

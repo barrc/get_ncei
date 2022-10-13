@@ -21,13 +21,16 @@ def process_data(data):
             local_id = split_name[0]
 
             split_item[2] = local_id + '.txt'
-            split_item[7] = 'PMET'
-            split_item[8] = '1990/01/01'
-            split_item[9] = '2020/12/31'
-            split_item[10] = '30.0' # TODO need to update when new data
+            if not os.path.exists(os.path.join(EVAP_BASEDIR, split_item[2])):
+                pass
+            else:
+                split_item[7] = 'PMET'
+                split_item[8] = '1990/01/01'
+                split_item[9] = '2020/12/31'
+                split_item[10] = '30.0' # TODO need to update when new data
 
-        split_item.pop(11)
-        evap_data.append('\t'.join(split_item))
+                split_item.pop(11)
+                evap_data.append('\t'.join(split_item))
 
     return evap_data
 
@@ -38,6 +41,11 @@ def write_pmet_file(data):
 
 
 if __name__ == '__main__':
+    EVAP_BASEDIR = os.path.join(
+        os.path.dirname(os.path.dirname(os.getcwd())),
+        'Data-Processing-for-SWC-and-SWMM-CAT', 'resources', 'temperature')
+    assert os.path.exists(EVAP_BASEDIR)
+
     d4em_prec_data = read_file()
     evap_data = process_data(d4em_prec_data)
     write_pmet_file(evap_data)
