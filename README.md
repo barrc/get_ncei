@@ -25,3 +25,5 @@
 
 - The file post_process_evap.py can be used to create the D4EM_PMET_updated file
     - Update the end year and period of record (marked with #TODO)
+    
+- Many scripts that were used for the original update
