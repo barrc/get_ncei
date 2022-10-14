@@ -296,7 +296,9 @@ def get_ordered_pairs(station):
 
         ordered_lat_lons.append((grid_lat, grid_lon))
 
-    return ordered_lat_lons
+    filtered_lat_lons = [x for x in ordered_lat_lons if x not in common.KNOWN_NO_DATA]
+
+    return filtered_lat_lons
 
 
 def adjust_dates(ldas, utc):
@@ -341,21 +343,27 @@ def nldas_routine(filename, station, station_network, missing_value, offset=Fals
     filled_data = fill_data(
         missing_dict, unfilled_precip_data, first_missing_date, missing_value)
     out_file = os.path.join(
-        common.DATA_BASE_DIR, 'filled_' + station_network + '_data', station.station_id + '.dat')
+        common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR)  + '_filled_' + station_network + '_data', station.station_id + '.dat')
     write_file(out_file, filled_data)
 
 
 def gldas_routine(filename, station, station_network, missing_value, offset=False):
     unfilled_precip_data = read_data(filename)
 
-    raw_gldas_data = get_gldas_data(
-        'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
-        str(station.latitude), str(station.longitude))
+    while True:
+        raw_gldas_data = get_gldas_data(
+            'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
+            str(station.latitude), str(station.longitude))
 
-    try:
-        gldas_precip_data = process_gldas_data(raw_gldas_data)
-    except ValueError:
-        gldas_precip_data = None
+        try:
+            gldas_precip_data = process_gldas_data(raw_gldas_data)
+            break
+        except ValueError as e:
+            if 'did not get a virtual rod successfully' in str(e):
+                pass
+            else:
+                gldas_precip_data = None
+                break
 
     if gldas_precip_data:
         gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
@@ -364,15 +372,22 @@ def gldas_routine(filename, station, station_network, missing_value, offset=Fals
         # try GLDAS routine with next-nearest grid cell
         pairs_to_try = get_ordered_pairs(station)
         for a_pair in pairs_to_try:
+            print(a_pair)
+            while True:
 
-            raw_gldas_data = get_gldas_data(
-                'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
-                str(a_pair[0]), str(a_pair[1]))
+                raw_gldas_data = get_gldas_data(
+                    'Rainf_tavg', station.start_date_to_use, station.end_date_to_use,
+                    str(a_pair[0]), str(a_pair[1]))
 
-            try:
-                gldas_precip_data = process_gldas_data(raw_gldas_data)
-            except ValueError:
-                gldas_precip_data = None
+                try:
+                    gldas_precip_data = process_gldas_data(raw_gldas_data)
+                    break
+                except ValueError as e:
+                    if 'did not get a virtual rod successfully' in str(e):
+                        pass
+                    else:
+                        gldas_precip_data = None
+                        break
 
             if gldas_precip_data:
                 gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_network, missing_value, offset)
@@ -396,7 +411,7 @@ def gldas_subset(gldas_precip_data, unfilled_precip_data, station, station_netwo
         missing_dict, unfilled_precip_data, first_missing_date, missing_value)
 
     out_file = os.path.join(
-        common.DATA_BASE_DIR, 'filled_' + station_network + '_data', station.station_id + '.dat')
+        common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_filled_' + station_network + '_data', station.station_id + '.dat')
 
     write_file(out_file, filled_data)
 

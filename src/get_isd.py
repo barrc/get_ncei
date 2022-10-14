@@ -25,16 +25,13 @@ import get_isd_stations
 
 # "01,0000,9,5"
 
-def get_raw_data(isd_station, start_date, end_date, old=False):
+def get_raw_data(isd_station_id, start_date, end_date, year=None):
     start_date_string = f"{start_date.year:04d}-{start_date.month:02d}-{start_date.day:02d}"
     end_date_string = f"{end_date.year:04d}-{end_date.month:02d}-{end_date.day:02d}"
 
     url = 'https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&' + \
-        'dataTypes=AA1&stations=' + isd_station + '&startDate=' + start_date_string + \
+        'dataTypes=AA1&stations=' + isd_station_id + '&startDate=' + start_date_string + \
         '&endDate=' + end_date_string + '&format=json&options=includeAttributes:false'
-
-    print(url)
-    exit()
 
     r = requests.get(url)
 
@@ -43,18 +40,21 @@ def get_raw_data(isd_station, start_date, end_date, old=False):
     except json.decoder.JSONDecodeError:
         stuff = json.loads(r.content.decode() + ']')
 
-    if old:
-        raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '_old.json')
+    if year:
+        raw_filename = os.path.join(
+            common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_raw_isd_data', isd_station_id + '.json')
     else:
-        raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station + '.json')
+        raw_filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', isd_station_id + '.json')
+
     out_json = json.dumps(stuff)
     with open(raw_filename, 'w') as file:
         file.write(out_json)
 
 
-def get_dates(station_id, old=False):
-    if old:
-        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '_old.json')
+def get_dates(station_id, year=None):
+    if year:
+        filename = os.path.join(
+            common.DATA_BASE_DIR, str(common.CURRENT_END_YEAR) + '_raw_isd_data', station_id + '.json')
     else:
         filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json')
 
@@ -91,22 +91,19 @@ def get_dates(station_id, old=False):
 
 
 
-def read_raw(station, first_date, last_date, old=False):
-    # TODO first_date and last_date
+def read_raw(station, year=None):
 
-    # first_date = station.start_date_to_use
-    # last_date = station.end_date_to_use
     station_id = station.station_id
 
-    if old:
-        filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '_old.json')
+    if year:
+        filename = os.path.join(common.DATA_BASE_DIR, str(year) + '_raw_isd_data', station_id + '.json')
     else:
         filename = os.path.join(common.DATA_BASE_DIR, 'raw_isd_data', station_id + '.json')
 
     with open(filename, 'r') as file:
         data = json.load(file)
 
-    date_dict = common.get_date_dict('9999', first_date, last_date)
+    date_dict = common.get_date_dict('9999', station.start_date_to_use, station.end_date_to_use)
 
     for item in data:
         try:
@@ -126,7 +123,7 @@ def read_raw(station, first_date, last_date, old=False):
                 # so you can't just do it in the parsing
                 # (they say 99 is the value for missing data but I can't find any instances where that's true)
 
-                if split_aa1[-1] == '5': # TODO add comment
+                if split_aa1[-1] == '5': # only records with QA flag = 5 (passed all quality checks) per Glenn Fernandez
                     precip_ = int(split_aa1[1])
                     if precip_ != 0:
                         precip = precip_/254.0
@@ -141,8 +138,8 @@ def read_raw(station, first_date, last_date, old=False):
         except KeyError:
             pass
 
-    if old:
-        out_filename = os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '_old.dat')
+    if year:
+        out_filename = os.path.join(common.DATA_BASE_DIR, str(year) + '_processed_isd_data', station_id + '.dat')
     else:
         os.path.join(common.DATA_BASE_DIR, 'processed_isd_data', station_id + '.dat')
 
@@ -163,8 +160,8 @@ def read_raw(station, first_date, last_date, old=False):
 
     return
 
-def get_percent_missing(isd, split_isd_data):
-    date_dict = common.get_date_dict('0', isd.start_date_to_use, isd.end_date_to_use)
+def get_percent_missing(split_isd_data, dict_start_date, dict_end_date):
+    date_dict = common.get_date_dict('0', dict_start_date, dict_end_date)
 
     for x in split_isd_data:
         date_dict[datetime.datetime(int(x[1]), int(x[2]), int(x[3]), int(x[4]))] = x[-1]
@@ -222,7 +219,8 @@ if __name__ == '__main__':
                         item.station_id + '.dat'))
 
                 # get percent missing
-                percent_missing = get_percent_missing(item, split_isd_data)
+                percent_missing = get_percent_missing(
+                    split_isd_data, item.start_date_to_use, item.end_date_to_use)
 
                 # use if < 25% missing data -- communication with Glenn Fernandez 1/5/2021
                 if percent_missing < 25.0:
@@ -231,7 +229,7 @@ if __name__ == '__main__':
 
 
 
-    filename = os.path.join('src', 'isd_herewegoagain.csv')
+    filename = os.path.join('src', 'isd_subset.csv')
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(asdict(data[0]).keys())

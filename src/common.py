@@ -3,7 +3,6 @@ import datetime
 import os
 from dataclasses import dataclass
 
-import requests
 
 CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
 
@@ -11,10 +10,12 @@ CHPD_BASE_URL = 'http://ncei.noaa.gov/data/coop-hourly-precipitation/v2/'
 EARLIEST_START_DATE = datetime.datetime(1990, 1, 1)
 
 # set CURRENT_END_YEAR to the year you are in minus 1
-CURRENT_END_YEAR = 2019
+CURRENT_END_YEAR = 2021
 CURRENT_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
 CUTOFF_START_DATE = datetime.datetime(CURRENT_END_YEAR - 10 + 1, 1, 1)
 CUTOFF_END_DATE = datetime.datetime(CURRENT_END_YEAR, 12, 31)
+
+TEN_YEARS = datetime.timedelta(days=3650)
 
 DATA_BASE_DIR = os.path.join('O:\\', 'PRIV', 'CPHEA', 'PESD',
                              'COR', 'Public', 'cbarr02')
@@ -33,42 +34,6 @@ class Station:
     network: str
     start_date_to_use: datetime.datetime
     end_date_to_use: datetime.datetime
-
-    # def get_start_date_to_use(self, basins, homr_codes=None):
-    #     if self.in_basins:
-    #         if self.network == 'coop':
-    #             match = [x for x in basins if self.station_id[-6:] == x.station_id]
-    #             assert len(match) == 1
-    #             x = match[0]
-    #         elif self.network == 'isd':
-    #             related_id = homr_codes[self.station_id[-5:]]
-    #             match = [x for x in basins if related_id == x.station_id]
-    #             assert len(match) == 1
-    #             x = match[0]
-    #         if self.start_date <= x.end_date:
-    #             return x.end_date + datetime.timedelta(days=1)
-    #         else:
-    #             return self.start_date
-
-    #     else:
-    #         if self.start_date <= EARLIEST_START_DATE:
-    #             return EARLIEST_START_DATE
-    #         else:
-    #             return self.start_date
-
-    # def get_end_date_to_use(self, basins, homr_codes=None):
-    #     # TODO does it matter if in basins?
-    #     if self.end_date >= CUTOFF_END_DATE:
-    #         return CUTOFF_END_DATE
-    #     elif self.network == 'coop':
-    #         # if coop, use last complete year
-    #         if self.end_date.day == 31 and self.end_date.month == 12:
-    #             return self.end_date
-    #         else:
-    #             return datetime.datetime(self.end_date.year - 1, 12, 31)
-    #     else:
-    #         # for ISD, use end_date, because may be adjacent to another station
-    #         return self.end_date
 
 
 def get_start_date_to_use(station):
@@ -205,3 +170,31 @@ def get_date_dict(value, first_date, last_date):
     return {key:value for key in date_list}
 
 
+KNOWN_NO_DATA = [
+    (18.375, -157.125), (18.625, -154.125), (18.625, -154.375),
+    (18.625, -154.625), (18.625, -154.875), (18.625, -155.125),
+    (18.625, -155.375), (18.625, -155.625), (18.625, -155.875),
+    (18.625, -156.125), (18.625, -156.375), (18.625, -156.625),
+    (18.625, -156.875), (18.625, -157.125), (18.875, -154.125),
+    (18.875, -154.375), (18.875, -154.625), (18.875, -154.875),
+    (18.875, -155.125), (18.875, -155.375), (18.875, -155.625),
+    (18.875, -155.875), (18.875, -156.125), (18.875, -156.375),
+    (18.875, -156.625), (18.875, -156.875), (18.875, -157.125),
+    (19.125, -154.125), (19.125, -154.375), (19.125, -154.625),
+    (19.125, -154.875), (19.125, -155.125), (19.125, -155.375),
+    (19.125, -156.125), (19.125, -156.375), (19.125, -156.625),
+    (19.125, -156.875), (19.125, -157.125), (19.375, -154.125),
+    (19.375, -154.375), (19.375, -154.625), (19.375, -154.875),
+    (19.375, -156.125), (19.375, -156.375), (19.375, -156.625),
+    (19.375, -156.875), (19.375, -157.125), (19.625, -154.125),
+    (19.625, -154.375), (19.625, -154.625), (19.625, -154.875),
+    (19.625, -156.125), (19.625, -156.375), (19.625, -156.625),
+    (19.625, -156.875), (19.625, -157.125), (19.875, -154.125),
+    (19.875, -154.375), (19.875, -154.625), (19.875, -154.875),
+    (19.875, -155.125), (19.875, -156.125), (19.875, -156.375),
+    (19.875, -156.625), (19.875, -156.875), (19.875, -157.125),
+    (20.125, -154.125), (20.125, -154.375), (20.125, -154.625),
+    (20.125, -154.875), (20.125, -155.125), (20.125, -155.375),
+    (20.125, -155.875), (20.125, -156.125), (20.125, -156.375),
+    (20.125, -156.625), (20.125, -156.875)
+]
